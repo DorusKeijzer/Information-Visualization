@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Visualization</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Navigation Menu -->
+      <div class="col-md-3 menu">
+        <button id="team" class="btn btn-danger w-100 mb-3">Team</button>
+        <button id="radargraph" class="btn btn-secondary w-100 mb-3">Radargraph</button>
+        <button id="scatter" class="btn btn-secondary w-100 mb-3">Scatter</button>
+        <button id="heatmap" class="btn btn-secondary w-100 mb-3">Heatmap</button>
+      </div>
+
+      <!-- Field Layout -->
+      <div class="col-md-6 field position-relative">
+        <!-- Field markings -->
+        <div class="center-circle"></div>
+        <div class="penalty-box top"></div>
+        <div class="penalty-box bottom"></div>
+        <div class="goal top"></div>
+        <div class="goal bottom"></div>
+        <div class="halfway-line"></div>
+
+        <!-- Players -->
+        <div id="player-gakpo" class="player" style="top: 10%; left: 50%;">C. Gakpo (ST)</div>
+        <div id="player-jota" class="player" style="top: 20%; left: 35%;">D. Jota (LW)</div>
+        <div id="player-salah" class="player" style="top: 20%; left: 65%;">M. Salah (RW)</div>
+        <div id="player-jones" class="player" style="top: 40%; left: 50%;">Curtis Jones (CAM)</div>
+        <div id="player-fabinho" class="player" style="top: 60%; left: 35%;">Fabinho (CM)</div>
+        <div id="player-henderson" class="player" style="top: 60%; left: 65%;">J. Henderson (CM)</div>
+        <div id="player-robertson" class="player" style="top: 80%; left: 10%;">A. Robertson (LB)</div>
+        <div id="player-vvd" class="player" style="top: 80%; left: 35%;">V. van Dijk (CB)</div>
+        <div id="player-matip" class="player" style="top: 80%; left: 65%;">J. Matip (CB)</div>
+        <div id="player-taa" class="player" style="top: 80%; left: 90%;">T. Alexander-Arnold (RB)</div>
+        <div id="player-alisson" class="player" style="top: 95%; left: 50%;">Allison Becker (GK)</div>
+      </div>
+
+      <!-- Substitutes -->
+      <div class="col-md-3 substitutes">
+        <div class="list-group">
+          <button class="list-group-item list-group-item-danger">T. Alcantara</button>
+          <button class="list-group-item list-group-item-danger">J. Milner</button>
+          <button class="list-group-item list-group-item-danger">L. Diaz</button>
+          <button class="list-group-item list-group-item-danger">D. Nunez</button>
+          <button class="list-group-item list-group-item-danger">J. Gomez</button>
+          <button class="list-group-item list-group-item-danger">F. Carvalho</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
