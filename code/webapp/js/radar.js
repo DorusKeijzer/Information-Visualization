@@ -1,6 +1,6 @@
 // Radar chart dimensions
-const radarWidth = 700;
-const radarHeight = 500;
+const radarWidth = 900;
+const radarHeight = 750;
 const radarMargin = { top: 50, right: 50, bottom: 50, left: 50 };
 
 
@@ -149,7 +149,7 @@ const radarGridLines = radarSvg
   .attr("class", "grid-circle")
   .style("fill", "#2c6a9b")
   .style("stroke", "white")
-  .style("fill-opacity", 0.1);
+  .style("fill-opacity", 1.0);
 
 // Draw grid labels
 radarSvg
@@ -235,9 +235,9 @@ if (unionPolygon) {
     .datum(coordinates)
     .attr("d", lineGenerator)
     .attr("class", "team-hull")
-    .style("fill", "orange")
+    .style("fill", "red")
     .style("fill-opacity", 0.3)
-    .style("stroke", "orange")
+    .style("stroke", "red")
     .style("stroke-width", 2);
 
   // Draw points on the union polygon vertices
@@ -249,7 +249,7 @@ if (unionPolygon) {
     .attr("cx", d => d[0])
     .attr("cy", d => d[1])
     .attr("r", 4)
-    .style("fill", "orange")
+    .style("fill", "red")
     .style("stroke", "black")
     .style("stroke-width", 1);
 }
@@ -262,9 +262,9 @@ if (unionPolygon) {
     .datum(coordinates)
     .attr("d", lineGenerator)
     .attr("class", "team-hull")
-    .style("fill", "orange")
+    .style("fill", "red")
     .style("fill-opacity", 0.3)
-    .style("stroke", "orange")
+    .style("stroke", "red")
     .style("stroke-width", 2);
 
   // Draw points on the union polygon vertices
@@ -276,7 +276,7 @@ if (unionPolygon) {
     .attr("cx", d => d[0])
     .attr("cy", d => d[1])
     .attr("r", 4)
-    .style("fill", "orange")
+    .style("fill", "red")
     .style("stroke", "black")
     .style("stroke-width", 1);
 }
@@ -292,9 +292,9 @@ radarSvg
   .append("path")
   .attr("class", "radar-area")
   .attr("d", d => radarLine(d.axes))
-  .style("fill", d => d.team_selection ? "orange" : "blue")
+  .style("fill", d => d.team_selection ? "red" : "blue")
   .style("fill-opacity", 0.3)
-  .style("stroke", d => d.team_selection ? "orange" : "blue")
+  .style("stroke", d => d.team_selection ? "red" : "blue")
   .style("stroke-width", 2);
 
 non_team
@@ -304,9 +304,9 @@ non_team
   .append("path")
   .attr("class", "radar-area")
   .attr("d", d => radarLine(d.axes))
-  .style("fill", d => d.team_selection ? "orange" : "blue")
+  .style("fill", d => d.team_selection ? "red" : "blue")
   .style("fill-opacity", 0.3)
-  .style("stroke", d => d.team_selection ? "orange" : "blue")
+  .style("stroke", d => d.team_selection ? "red" : "blue")
   .style("stroke-width", 2);
 
 // Add tooltips
