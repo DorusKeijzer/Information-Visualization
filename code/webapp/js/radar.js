@@ -3,7 +3,7 @@ const radarWidth = 700;
 const radarHeight = 500;
 const radarMargin = { top: 50, right: 50, bottom: 50, left: 50 };
 
-// Data for radar chart
+
 const radarData = [
   {
     name: "Player A",
@@ -14,7 +14,7 @@ const radarData = [
       { axis: "Defending", value: 0.4 },
       { axis: "Physical", value: 0.9 },
     ],
-    team_selection: true,  // Indicates this player is part of the currently selected team
+    team_selection: true,
   },
   {
     name: "Player B",
@@ -25,9 +25,9 @@ const radarData = [
       { axis: "Defending", value: 0.6 },
       { axis: "Physical", value: 0.6 },
     ],
-    team_selection: false,
+    team_selection: true,
   },
-    {
+  {
     name: "Player C",
     axes: [
       { axis: "Shooting", value: 0.9 },
@@ -38,18 +38,89 @@ const radarData = [
     ],
     team_selection: true,
   },
+  {
+    name: "Player D",
+    axes: [
+      { axis: "Shooting", value: 0.7 },
+      { axis: "Passing", value: 0.8 },
+      { axis: "Dribbling", value: 0.6 },
+      { axis: "Defending", value: 0.5 },
+      { axis: "Physical", value: 0.7 },
+    ],
+    team_selection: true,
+  },
+  {
+    name: "Player E",
+    axes: [
+      { axis: "Shooting", value: 0.6 },
+      { axis: "Passing", value: 0.7 },
+      { axis: "Dribbling", value: 0.9 },
+      { axis: "Defending", value: 0.4 },
+      { axis: "Physical", value: 0.5 },
+    ],
+    team_selection: true,
+  },
+  {
+    name: "Player F",
+    axes: [
+      { axis: "Shooting", value: 0.4 },
+      { axis: "Passing", value: 0.6 },
+      { axis: "Dribbling", value: 0.5 },
+      { axis: "Defending", value: 0.7 },
+      { axis: "Physical", value: 0.8 },
+    ],
+    team_selection: true,
+  },
+  {
+    name: "Player G",
+    axes: [
+      { axis: "Shooting", value: 0.8 },
+      { axis: "Passing", value: 0.5 },
+      { axis: "Dribbling", value: 0.6 },
+      { axis: "Defending", value: 0.7 },
+      { axis: "Physical", value: 0.9 },
+    ],
+    team_selection: true,
+  },
+  {
+    name: "Player H",
+    axes: [
+      { axis: "Shooting", value: 0.7 },
+      { axis: "Passing", value: 0.6 },
+      { axis: "Dribbling", value: 0.7 },
+      { axis: "Defending", value: 0.6 },
+      { axis: "Physical", value: 0.7 },
+    ],
+    team_selection: true,
+  },
+  {
+    name: "Player I",
+    axes: [
+      { axis: "Shooting", value: 0.9 },
+      { axis: "Passing", value: 0.8 },
+      { axis: "Dribbling", value: 0.7 },
+      { axis: "Defending", value: 0.5 },
+      { axis: "Physical", value: 0.6 },
+    ],
+    team_selection: false,
+  },
+  {
+    name: "Player J",
+    axes: [
+      { axis: "Shooting", value: 0.6 },
+      { axis: "Passing", value: 0.7 },
+      { axis: "Dribbling", value: 0.8 },
+      { axis: "Defending", value: 0.6 },
+      { axis: "Physical", value: 0.8 },
+    ],
+    team_selection: true,
+  },
 ];
 
 
-team = radarData.filter(d => d.team_selection)
 
-non_team = radarData.filter(d => !d.team_selection)
-
-
-console.log("Team", team)
-console.log("Non Team", non_team)
-
-
+const team = radarData.filter(player => player.team_selection);
+const non_team = radarData.filter(player => !player.team_selection);
 
 // Calculate radius and angle
 const radarRadius = Math.min(radarWidth, radarHeight) / 2 - radarMargin.top;
@@ -62,10 +133,7 @@ const radarSvg = d3
   .attr("width", radarWidth)
   .attr("height", radarHeight)
   .append("g")
-  .attr(
-    "transform",
-    `translate(${radarWidth / 2}, ${radarHeight / 2})`
-  );
+  .attr("transform", `translate(${radarWidth / 2}, ${radarHeight / 2})`);
 
 // Define radial scale
 const radarScale = d3.scaleLinear().range([0, radarRadius]).domain([0, 1]);
@@ -116,90 +184,153 @@ radarAxes
 
 radarAxes
   .append("text")
-  .attr("x", (_, i) => (radarScale(1.1) * Math.cos(radarAngleSlice * i - Math.PI / 2)))
-  .attr("y", (_, i) => (radarScale(1.1) * Math.sin(radarAngleSlice * i - Math.PI / 2)))
+  .attr("x", (_, i) => radarScale(1.1) * Math.cos(radarAngleSlice * i - Math.PI / 2))
+  .attr("y", (_, i) => radarScale(1.1) * Math.sin(radarAngleSlice * i - Math.PI / 2))
   .style("fill", "white")
   .style("text-anchor", "middle")
   .text(d => d.axis);
 
-// Draw radar polygons using polar coordinates cause that is easier to work with
+// Draw radar polygons using polar coordinates
 const radarLine = d3
   .lineRadial()
   .radius(d => radarScale(d.value))
-  .angle((_, i) => i * radarAngleSlice);
+  .angle((_, i) => i * radarAngleSlice)
+  .curve(d3.curveLinearClosed);
 
-// converts polar coordinates to cartesian coordinates cause that is required for D3's polygon hull function
-function polar2Cartesian(r, theta){ 
+// Convert polar coordinates to cartesian coordinates
+function polar2Cartesian(r, theta) {
   return [Math.sin(theta) * r, -Math.cos(theta) * r];
-};
-
-// gets the cartesian coordinates of a player
-function player2Points(player) { 
-  return player.axes.map((d, i) => {
-  const r = radarScale(d.value);
-  const theta = i * radarAngleSlice;
-  return polar2Cartesian(r, theta);
-});
-
 }
 
-team_hull = []
+function player2Points(player) {
+  const points = player.axes.map((d, i) => {
+    const r = radarScale(d.value);
+    const theta = i * radarAngleSlice;
+    return polar2Cartesian(r, theta);
+  });
+  points.push(points[0]); // Close the polygon
+  return points;
+}
 
-// adds player of the users team to the outer hull 
-team.forEach(player => {
-  player_points = player2Points(player)
-  team_hull = team_hull.concat(player2Points(player));
+const playerPolygons = team.map(player => {
+  return turf.polygon([player2Points(player)]);
 });
+console.log(playerPolygons)
 
-team_hull_polygon = d3.polygonHull(team_hull)
+// Compute the union of all player polygons using Turf.js
+// We need to reduce the array of polygons by applying union operations pairwise
+let unionPolygon = turf.union(turf.featureCollection(playerPolygons));
 
 
+// Create a line generator for D3
 const lineGenerator = d3.line()
-  .x(d => d[0])  // x-coordinate of the point
-  .y(d => d[1]); // y-coordinate of the point
+  .x(d => d[0])
+  .y(d => d[1]);
 
-// Draw the team hull (convex polygon)
-radarSvg
-  .append("path")
-  .datum(team_hull_polygon)  // Set the convex hull points as the data
-  .attr("d", lineGenerator)  // Generate the path using the line generator
-  .attr("class", "team-hull")  // Add a class for styling
-  .style("fill", "orange")  // Color of the hull
-  .style("fill-opacity", 0.3)  // Transparency
-  .style("stroke", "orange")  // Stroke color
-  .style("stroke-width", 2);  // Stroke width
-
-team_hull.forEach(d =>{
-  radarSvg
-    .append("circle")
-    .attr('cx', d[0])
-    .attr('cy', d[1])
-    .attr("r",4)
-    .style("fill", "orange")
-    .style("stroke", "black")
-    .style("stroke-width", 1)
-
-});
-
-team.forEach(player => {
+// Draw the union of the polygons
+if (unionPolygon) {
+  const coordinates = unionPolygon.geometry.coordinates[0];
   radarSvg
     .append("path")
-    .datum(player.axes)
-    .attr("class", "radar-area")
-    .attr("d", radarLine)
-    .style("fill", player => player.team_selection ? "orange" : "blue")
+    .datum(coordinates)
+    .attr("d", lineGenerator)
+    .attr("class", "team-hull")
+    .style("fill", "orange")
     .style("fill-opacity", 0.3)
-    .style("stroke",  player => player.team_selection ? "orange" : "blue")
+    .style("stroke", "orange")
     .style("stroke-width", 2);
-});
 
-// Add tooltips for each area
+  // Draw points on the union polygon vertices
+  radarSvg
+    .selectAll(".union-point")
+    .data(coordinates)
+    .enter()
+    .append("circle")
+    .attr("cx", d => d[0])
+    .attr("cy", d => d[1])
+    .attr("r", 4)
+    .style("fill", "orange")
+    .style("stroke", "black")
+    .style("stroke-width", 1);
+}
+
+// Draw the union of the polygons
+if (unionPolygon) {
+  const coordinates = unionPolygon.geometry.coordinates[0];
+  radarSvg
+    .append("path")
+    .datum(coordinates)
+    .attr("d", lineGenerator)
+    .attr("class", "team-hull")
+    .style("fill", "orange")
+    .style("fill-opacity", 0.3)
+    .style("stroke", "orange")
+    .style("stroke-width", 2);
+
+  // Draw points on the union polygon vertices
+  radarSvg
+    .selectAll(".union-point")
+    .data(coordinates)
+    .enter()
+    .append("circle")
+    .attr("cx", d => d[0])
+    .attr("cy", d => d[1])
+    .attr("r", 4)
+    .style("fill", "orange")
+    .style("stroke", "black")
+    .style("stroke-width", 1);
+}
+
+// Draw individual player polygons
+//
+//
+
 radarSvg
   .selectAll(".radar-area")
-  .on("mouseover", function (_, _) {
-    d3.select(this).style("fill-opacity", 0.6);
+  .data(non_team)  // Use non_team, not radarData
+  .enter()
+  .append("path")
+  .attr("class", "radar-area")
+  .attr("d", d => radarLine(d.axes))
+  .style("fill", d => d.team_selection ? "orange" : "blue")
+  .style("fill-opacity", 0.3)
+  .style("stroke", d => d.team_selection ? "orange" : "blue")
+  .style("stroke-width", 2);
+
+non_team
+  .selectAll(".radar-area")
+  .data(radarData)
+  .enter()
+  .append("path")
+  .attr("class", "radar-area")
+  .attr("d", d => radarLine(d.axes))
+  .style("fill", d => d.team_selection ? "orange" : "blue")
+  .style("fill-opacity", 0.3)
+  .style("stroke", d => d.team_selection ? "orange" : "blue")
+  .style("stroke-width", 2);
+
+// Add tooltips
+radarSvg
+  .selectAll(".radar-area")
+  .on("mouseover", function(event, d) {
+    d3.select(this)
+      .style("fill-opacity", 0.6)
+      .style("cursor", "pointer");
+    
+    radarSvg
+      .append("text")
+      .attr("class", "tooltip")
+      .attr("x", 0)
+      .attr("y", -radarRadius - 10)
+      .style("text-anchor", "middle")
+      .style("fill", "white")
+      .text(d.name);
   })
-  .on("mouseout", function (_, _) {
-    d3.select(this).style("fill-opacity", 0.3);
+  .on("mouseout", function() {
+    d3.select(this)
+      .style("fill-opacity", 0.3)
+      .style("cursor", "default");
+    
+    radarSvg.selectAll(".tooltip").remove();
   });
 
