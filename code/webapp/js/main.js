@@ -7,7 +7,7 @@ document.getElementById('scatter').addEventListener('click', () => {
   });
   
   document.getElementById('heatmap').addEventListener('click', () => {
-    alert('Heatmap is under construction!');
+    window.location.href = 'heatmap.html';
   });
   
   document.getElementById('team').addEventListener('click', () => {
