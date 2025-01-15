@@ -17,6 +17,15 @@ body {
     border-radius: 15px;
     overflow: hidden;
   }
+
+  .rounded {
+
+    background-color: #2c6a9b;
+    border-radius: 2px;
+    padding: 2px;
+    padding-left: 5px;
+    
+  }
   
   .center-circle {
     position: absolute;
