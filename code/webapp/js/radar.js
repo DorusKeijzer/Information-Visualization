@@ -1,8 +1,13 @@
-// Radar chart dimensions
+/************************
+ *  Constants & Config
+ ************************/
 const radarWidth = 900;
 const radarHeight = 750;
 const radarMargin = { top: 50, right: 50, bottom: 50, left: 50 };
 
+/************************
+ *  Data
+ ************************/
 
 const radarData = [
   {
@@ -118,10 +123,12 @@ const radarData = [
 ];
 
 
-
 const team = radarData.filter(player => player.team_selection);
 const non_team = radarData.filter(player => !player.team_selection);
 
+/************************
+ *  Setup & Calculations
+ ************************/
 // Calculate radius and angle
 const radarRadius = Math.min(radarWidth, radarHeight) / 2 - radarMargin.top;
 const radarAngleSlice = (Math.PI * 2) / radarData[0].axes.length;
@@ -138,53 +145,51 @@ const radarSvg = d3
 // Define radial scale
 const radarScale = d3.scaleLinear().range([0, radarRadius]).domain([0, 1]);
 
-// Draw grid circles
-//
-//
-
+/************************
+ *  Grid Functions
+ ************************/
 function draw_grid_area(levels) {
-radarSvg
-  .selectAll(".grid-circle")
-  .data(d3.range(1, levels + 1).reverse())
-  .enter()
-  .append("circle")
-  .attr("r", d => (radarRadius / levels) * d)
-  .attr("class", "grid-circle")
-  .style("fill", "#2c6a9b")
-  .style("fill-opacity", 1.0);
-};
-
+  radarSvg
+    .selectAll(".grid-circle")
+    .data(d3.range(1, levels + 1).reverse())
+    .enter()
+    .append("circle")
+    .attr("r", d => (radarRadius / levels) * d)
+    .attr("class", "grid-circle")
+    .style("fill", "#2c6a9b")
+    .style("fill-opacity", 1.0);
+}
 
 function draw_grid_lines(levels) {
-radarSvg
-  .selectAll(".grid-circle")
-  .data(d3.range(1, levels + 1).reverse())
-  .enter()
-  .append("circle")
-  .attr("r", d => (radarRadius / levels) * d)
-  .attr("class", "grid-circle")
-  .style("stroke", "white")
-  .style("fill-opacity", 0.0);
-};
+  radarSvg
+    .selectAll(".grid-circle")
+    .data(d3.range(1, levels + 1).reverse())
+    .enter()
+    .append("circle")
+    .attr("r", d => (radarRadius / levels) * d)
+    .attr("class", "grid-circle")
+    .style("stroke", "white")
+    .style("fill-opacity", 0.0);
+}
 
+function draw_grid_labels() {
+  radarSvg
+    .selectAll(".grid-label")
+    .data(d3.range(1, radarGridLevels + 1).reverse())
+    .enter()
+    .append("text")
+    .attr("x", 0)
+    .attr("y", d => -radarScale(d / radarGridLevels))
+    .attr("class", "grid-label")
+    .attr("dy", "-0.3em")
+    .style("fill", "white")
+    .style("text-anchor", "middle")
+    .text(d => `${(d / radarGridLevels) * 100}%`);
+}
 
-function draw_grid_labels(){
-// Draw grid labels
-radarSvg
-  .selectAll(".grid-label")
-  .data(d3.range(1, radarGridLevels + 1).reverse())
-  .enter()
-  .append("text")
-  .attr("x", 0)
-  .attr("y", d => -radarScale(d / radarGridLevels))
-  .attr("class", "grid-label")
-  .attr("dy", "-0.3em")
-  .style("fill", "white")
-  .style("text-anchor", "middle")
-  .text(d => `${(d / radarGridLevels) * 100}%`);
-};
-// Draw axes
-
+/************************
+ *  Axes Functions
+ ************************/
 function draw_axes() {
   const radarAxes = radarSvg
     .selectAll(".axis")
@@ -210,6 +215,10 @@ function draw_axes() {
     .style("text-anchor", "middle")
     .text(d => d.axis);
 }
+
+/************************
+ *  Polygon Drawing Setup
+ ************************/
 // Draw radar polygons using polar coordinates
 const radarLine = d3
   .lineRadial()
@@ -232,23 +241,24 @@ function player2Points(player) {
   return points;
 }
 
+/************************
+ *  Polygon Generation
+ ************************/
 const playerPolygons = team.map(player => {
   return turf.polygon([player2Points(player)]);
 });
-console.log(playerPolygons)
 
 // Compute the union of all player polygons using Turf.js
-// We need to reduce the array of polygons by applying union operations pairwise
 let unionPolygon = turf.union(turf.featureCollection(playerPolygons));
-
 
 // Create a line generator for D3
 const lineGenerator = d3.line()
   .x(d => d[0])
   .y(d => d[1]);
 
-// Draw the union of the polygons
-
+/************************
+ *  Drawing Functions
+ ************************/
 function draw_union(unionPolygon) {
   const coordinates = unionPolygon.geometry.coordinates[0];
   radarSvg
@@ -260,50 +270,38 @@ function draw_union(unionPolygon) {
     .style("fill-opacity", 0.4)
     .style("stroke", "red")
     .style("stroke-opacity", 0.4)
-    .style("stroke-width", 2);
-  // Draw points on the union polygon vertices
-  //radarSvg
-  //  .selectAll(".union-point")
-  //  .data(coordinates)
-  //  .enter()
-  //  .append("circle")
-  //  .attr("cx", d => d[0])
-  //  .attr("cy", d => d[1])
-  //  .attr("r", 4)
-  //  .style("fill", "red")
-  //  .style("stroke", "white")
-  //  .style("stroke-width", 1);
-
-};
-
+    .style("stroke-width", 4);
+}
 
 function draw_individual(set_of_players, color) {
-radarSvg
-  .selectAll(".radar-area")
-  .data(set_of_players)  // Use non_team, not radarData
-  .enter()
-  .append("path")
-  .attr("class", "radar-area")
-  .attr("d", d => radarLine(d.axes))
-  .style("fill", color)
-  .style("fill-opacity", 0.3)
-  .style("stroke",color)
-  .style("stroke-width", 2);
+  radarSvg
+    .selectAll(".radar-area")
+    .data(set_of_players)
+    .enter()
+    .append("path")
+    .attr("class", "radar-area")
+    .attr("d", d => radarLine(d.axes))
+    .style("fill", color)
+    .style("fill-opacity", 0.3)
+    .style("stroke", color)
+    .style("stroke-width", 4);
 }
 
+/************************
+ *  Initialization
+ ************************/
 draw_grid_lines(5);
-draw_axes()
+draw_axes();
 
-//draw_grid_area(5);
 if (unionPolygon) {
-  draw_union(unionPolygon)
+  draw_union(unionPolygon);
 }
-draw_individual(non_team, "blue")
-//draw_individual(team, "red")
+draw_individual(non_team, "blue");
+draw_grid_labels();
 
-
-draw_grid_labels()
-
+/************************
+ *  Interactivity
+ ************************/
 // Add tooltips
 radarSvg
   .selectAll(".radar-area")
