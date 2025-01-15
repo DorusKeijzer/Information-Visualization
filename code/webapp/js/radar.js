@@ -139,18 +139,36 @@ const radarSvg = d3
 const radarScale = d3.scaleLinear().range([0, radarRadius]).domain([0, 1]);
 
 // Draw grid circles
-const radarGridLevels = 5;
-const radarGridLines = radarSvg
+//
+//
+
+function draw_grid_area(levels) {
+radarSvg
   .selectAll(".grid-circle")
-  .data(d3.range(1, radarGridLevels + 1).reverse())
+  .data(d3.range(1, levels + 1).reverse())
   .enter()
   .append("circle")
-  .attr("r", d => (radarRadius / radarGridLevels) * d)
+  .attr("r", d => (radarRadius / levels) * d)
   .attr("class", "grid-circle")
   .style("fill", "#2c6a9b")
-  .style("stroke", "white")
   .style("fill-opacity", 1.0);
+};
 
+
+function draw_grid_lines(levels) {
+radarSvg
+  .selectAll(".grid-circle")
+  .data(d3.range(1, levels + 1).reverse())
+  .enter()
+  .append("circle")
+  .attr("r", d => (radarRadius / levels) * d)
+  .attr("class", "grid-circle")
+  .style("stroke", "white")
+  .style("fill-opacity", 0.0);
+};
+
+
+function draw_grid_labels(){
 // Draw grid labels
 radarSvg
   .selectAll(".grid-label")
@@ -164,32 +182,34 @@ radarSvg
   .style("fill", "white")
   .style("text-anchor", "middle")
   .text(d => `${(d / radarGridLevels) * 100}%`);
-
+};
 // Draw axes
-const radarAxes = radarSvg
-  .selectAll(".axis")
-  .data(radarData[0].axes)
-  .enter()
-  .append("g")
-  .attr("class", "axis");
 
-radarAxes
-  .append("line")
-  .attr("x1", 0)
-  .attr("y1", 0)
-  .attr("x2", (_, i) => radarScale(1) * Math.cos(radarAngleSlice * i - Math.PI / 2))
-  .attr("y2", (_, i) => radarScale(1) * Math.sin(radarAngleSlice * i - Math.PI / 2))
-  .style("stroke", "white")
-  .style("stroke-width", 1.5);
+function draw_axes() {
+  const radarAxes = radarSvg
+    .selectAll(".axis")
+    .data(radarData[0].axes)
+    .enter()
+    .append("g")
+    .attr("class", "axis");
 
-radarAxes
-  .append("text")
-  .attr("x", (_, i) => radarScale(1.1) * Math.cos(radarAngleSlice * i - Math.PI / 2))
-  .attr("y", (_, i) => radarScale(1.1) * Math.sin(radarAngleSlice * i - Math.PI / 2))
-  .style("fill", "white")
-  .style("text-anchor", "middle")
-  .text(d => d.axis);
+  radarAxes
+    .append("line")
+    .attr("x1", 0)
+    .attr("y1", 0)
+    .attr("x2", (_, i) => radarScale(1) * Math.cos(radarAngleSlice * i - Math.PI / 2))
+    .attr("y2", (_, i) => radarScale(1) * Math.sin(radarAngleSlice * i - Math.PI / 2))
+    .style("stroke", "white")
+    .style("stroke-width", 1.5);
 
+  radarAxes
+    .append("text")
+    .attr("x", (_, i) => radarScale(1.1) * Math.cos(radarAngleSlice * i - Math.PI / 2))
+    .attr("y", (_, i) => radarScale(1.1) * Math.sin(radarAngleSlice * i - Math.PI / 2))
+    .style("fill", "white")
+    .style("text-anchor", "middle")
+    .text(d => d.axis);
+}
 // Draw radar polygons using polar coordinates
 const radarLine = d3
   .lineRadial()
@@ -228,7 +248,8 @@ const lineGenerator = d3.line()
   .y(d => d[1]);
 
 // Draw the union of the polygons
-if (unionPolygon) {
+
+function draw_union(unionPolygon) {
   const coordinates = unionPolygon.geometry.coordinates[0];
   radarSvg
     .append("path")
@@ -236,78 +257,52 @@ if (unionPolygon) {
     .attr("d", lineGenerator)
     .attr("class", "team-hull")
     .style("fill", "red")
-    .style("fill-opacity", 0.3)
+    .style("fill-opacity", 0.4)
     .style("stroke", "red")
+    .style("stroke-opacity", 0.4)
     .style("stroke-width", 2);
-
   // Draw points on the union polygon vertices
-  radarSvg
-    .selectAll(".union-point")
-    .data(coordinates)
-    .enter()
-    .append("circle")
-    .attr("cx", d => d[0])
-    .attr("cy", d => d[1])
-    .attr("r", 4)
-    .style("fill", "red")
-    .style("stroke", "black")
-    .style("stroke-width", 1);
-}
+  //radarSvg
+  //  .selectAll(".union-point")
+  //  .data(coordinates)
+  //  .enter()
+  //  .append("circle")
+  //  .attr("cx", d => d[0])
+  //  .attr("cy", d => d[1])
+  //  .attr("r", 4)
+  //  .style("fill", "red")
+  //  .style("stroke", "white")
+  //  .style("stroke-width", 1);
 
-// Draw the union of the polygons
-if (unionPolygon) {
-  const coordinates = unionPolygon.geometry.coordinates[0];
-  radarSvg
-    .append("path")
-    .datum(coordinates)
-    .attr("d", lineGenerator)
-    .attr("class", "team-hull")
-    .style("fill", "red")
-    .style("fill-opacity", 0.3)
-    .style("stroke", "red")
-    .style("stroke-width", 2);
+};
 
-  // Draw points on the union polygon vertices
-  radarSvg
-    .selectAll(".union-point")
-    .data(coordinates)
-    .enter()
-    .append("circle")
-    .attr("cx", d => d[0])
-    .attr("cy", d => d[1])
-    .attr("r", 4)
-    .style("fill", "red")
-    .style("stroke", "black")
-    .style("stroke-width", 1);
-}
 
-// Draw individual player polygons
-//
-//
-
+function draw_individual(set_of_players, color) {
 radarSvg
   .selectAll(".radar-area")
-  .data(non_team)  // Use non_team, not radarData
+  .data(set_of_players)  // Use non_team, not radarData
   .enter()
   .append("path")
   .attr("class", "radar-area")
   .attr("d", d => radarLine(d.axes))
-  .style("fill", d => d.team_selection ? "red" : "blue")
+  .style("fill", color)
   .style("fill-opacity", 0.3)
-  .style("stroke", d => d.team_selection ? "red" : "blue")
+  .style("stroke",color)
   .style("stroke-width", 2);
+}
 
-non_team
-  .selectAll(".radar-area")
-  .data(radarData)
-  .enter()
-  .append("path")
-  .attr("class", "radar-area")
-  .attr("d", d => radarLine(d.axes))
-  .style("fill", d => d.team_selection ? "red" : "blue")
-  .style("fill-opacity", 0.3)
-  .style("stroke", d => d.team_selection ? "red" : "blue")
-  .style("stroke-width", 2);
+draw_grid_lines(5);
+draw_axes()
+
+//draw_grid_area(5);
+if (unionPolygon) {
+  draw_union(unionPolygon)
+}
+draw_individual(non_team, "blue")
+//draw_individual(team, "red")
+
+
+draw_grid_labels()
 
 // Add tooltips
 radarSvg
