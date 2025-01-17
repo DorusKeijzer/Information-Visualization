@@ -172,19 +172,19 @@ function draw_grid_lines(levels) {
     .style("fill-opacity", 0.0);
 }
 
-function draw_grid_labels() {
+function draw_grid_labels(levels) {
   radarSvg
     .selectAll(".grid-label")
-    .data(d3.range(1, radarGridLevels + 1).reverse())
+    .data(d3.range(1, levels + 1).reverse())
     .enter()
     .append("text")
     .attr("x", 0)
-    .attr("y", d => -radarScale(d / radarGridLevels))
+    .attr("y", d => -radarScale(d / levels))
     .attr("class", "grid-label")
     .attr("dy", "-0.3em")
     .style("fill", "white")
     .style("text-anchor", "middle")
-    .text(d => `${(d / radarGridLevels) * 100}%`);
+    .text(d => `${(d / levels) * 100}%`);
 }
 
 /************************
@@ -259,6 +259,23 @@ const lineGenerator = d3.line()
 /************************
  *  Drawing Functions
  ************************/
+function normalize(data, propertyName) {
+    // First, extract the values for the specified property
+    const values = data.map(item => Number(item[propertyName]));
+    
+    // Find the maximum value
+    const maxValue = Math.max(...values);
+    
+    // Return new array with normalized values
+    return data.map(item => ({
+        ...item,
+        [`normalized${propertyName}`]: Number(item[propertyName]) / maxValue
+    }));
+}
+
+
+
+
 function draw_union(unionPolygon) {
   const coordinates = unionPolygon.geometry.coordinates[0];
   radarSvg
@@ -290,6 +307,25 @@ function draw_individual(set_of_players, color) {
 /************************
  *  Initialization
  ************************/
+
+const jsonFilePath = "../webapp/data/2022-2023_Football_Player_Stats.json";
+
+d3.json("../webapp/data/2022-2023_Football_Player_Stats.json").then(data => {
+  console.log(data);
+  const team = data.filter(d => d.Squad == "Leeds United")
+  console.log(team)
+
+  goals = team.map(d => Number(d.Goals));
+  goals = goals.map(d => d / Math.max(...goals));
+  console.log(goals)
+
+  pass_complete = team.map(d => Number(d.PasTotCmp));
+  //pass_complete = normalize(pass_complete)
+
+  console.log(team, non_team.Player)
+})
+
+
 draw_grid_lines(5);
 draw_axes();
 
@@ -297,7 +333,7 @@ if (unionPolygon) {
   draw_union(unionPolygon);
 }
 draw_individual(non_team, "blue");
-draw_grid_labels();
+draw_grid_labels(5);
 
 /************************
  *  Interactivity
@@ -326,4 +362,6 @@ radarSvg
     
     radarSvg.selectAll(".tooltip").remove();
   });
+
+
 
