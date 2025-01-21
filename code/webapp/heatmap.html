@@ -54,6 +54,19 @@
                 </div>
             </div>
 
+            <!-- Position Filters -->
+            <div class="filter-item ms-3">
+                <label class="form-label text-white">Select Position:</label>
+                <div id="position-filter" class="d-flex flex-wrap">
+                    <button class="btn btn-secondary me-2" data-position="all">All</button>
+                    <button class="btn btn-secondary me-2" data-position="attacking">Attacking</button>
+                    <button class="btn btn-secondary me-2" data-position="midfield">Midfield</button>
+                    <button class="btn btn-secondary me-2" data-position="defensive">Defensive</button>
+                    <button class="btn btn-secondary" data-position="keeper">Keeper</button>
+                </div>
+            </div>
+
+            <!-- Player Search -->
             <div class="mb-3">
                 <label for="player-search" class="form-label text-white">Search Player:</label>
                 <input
@@ -64,15 +77,13 @@
                         style="width: 300px;"
                 />
             </div>
-
         </div>
-
 
         <!-- Heatmap Container -->
         <div id="heatmap-container" class="chart-container"></div>
     </div>
 </div>
 
-<script src="js/heatmap.js"></script>
+<script type="module" src="js/heatmap.js"></script>
 </body>
 </html>
