@@ -1,191 +1,135 @@
 import { DataManager } from './datamanager.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-    let lockedPlayers = [];
-    let currentSortColumn = null;
-    let currentSortOrder = 'asc';
-
-    const container = d3.select("#heatmap-container");
-    let colorScales = {};
-
-    // Initialize color scales
-    function initializeColorScales(data) {
-        console.log("Initializing color scales with data:", data);
-        colorScales = {
-            MP: d3.scaleLinear().domain(getClippedDomain(data, 'MP')).range(['#e8f5e9', '#1b5e20']),
-            Goals: d3.scaleLinear().domain(getClippedDomain(data, 'Goals')).range(['#e8f5e9', '#1b5e20']),
-            SoT: d3.scaleLinear().domain(getClippedDomain(data, 'SoT')).range(['#e8f5e9', '#1b5e20']),
-            'PasTotCmp%': d3.scaleLinear().domain(getClippedDomain(data, 'PasTotCmp%')).range(['#e8f5e9', '#1b5e20']),
-            Assists: d3.scaleLinear().domain(getClippedDomain(data, 'Assists')).range(['#e8f5e9', '#1b5e20']),
-        };
+class RadarGraph {
+    constructor(selector, columns) {
+        this.columns = columns;
+        this.radarWidth = 900;
+        this.radarHeight = 750;
+        this.radarMargin = { top: 50, right: 50, bottom: 50, left: 50 };
+        this.radarRadius = Math.min(this.radarWidth, this.radarHeight) / 2 - this.radarMargin.top;
+        this.radarAngleSlice = (Math.PI * 2) / columns.length;
+        
+        // Create SVG
+        this.svg = d3.select("#radar")
+            .append("svg")
+            .attr("width", this.radarWidth)
+            .attr("height", this.radarHeight)
+            .append("g")
+            .attr("transform", `translate(${this.radarWidth / 2}, ${this.radarHeight / 2})`);
+        
+        // Define radial scale
+        this.radarScale = d3.scaleLinear().range([0, this.radarRadius]).domain([0, 1]);
+        
+        // Line generator for radar polygons
+        this.radarLine = d3.lineRadial()
+            .radius(d => this.radarScale(d.value))
+            .angle((_, i) => i * this.radarAngleSlice)
+            .curve(d3.curveLinearClosed);
     }
 
-    // Function to calculate clipped domain for color scales
-    function getClippedDomain(data, column, lower = 0.05, upper = 0.95) {
-        const values = data.map(d => +d[column]).filter(v => !isNaN(v)).sort((a, b) => a - b);
-        if (values.length === 0) return [0, 1]; // Default domain for empty data
-        const lowerIndex = Math.floor(lower * values.length);
-        const upperIndex = Math.ceil(upper * values.length - 1);
-        return [values[lowerIndex], values[upperIndex]];
+    // Prepare radar data
+    prepareRadarData(data, columns) {
+        return data.map(player => ({
+            name: player.Player,
+            axes: columns.map(col => ({
+                axis: col,
+                value: +player[col] / Math.max(...data.map(d => +d[col] || 0))
+            })),
+            team_selection: true
+        }));
     }
 
-    // Update the heatmap
-    function updateHeatmap(data) {
-        console.log("Updating heatmap with data:", data);
-        container.selectAll("*").remove();
-
-        if (data.length === 0) {
-            container.append('p').text('No data available for the selected filters.');
-            return;
-        }
-
-        const table = container.append("table").attr("class", "table table-dark table-hover");
-        const thead = table.append("thead");
-        const tbody = table.append("tbody");
-
-        const headers = ['Lock', 'Player', 'Age', 'Squad', 'Pos', 'MP', 'Goals', 'SoT', 'PasTotCmp%', 'Assists'];
-
-        // Add headers with sorting
-        thead.append("tr")
-            .selectAll("th")
-            .data(headers)
+    // Draw grid lines
+    drawGridLines(levels) {
+        this.svg
+            .selectAll(".grid-circle")
+            .data(d3.range(1, levels + 1).reverse())
             .enter()
-            .append("th")
-            .text(d => d)
-            .on("click", function (event, column) {
-                if (column === 'Lock') return;
+            .append("circle")
+            .attr("r", d => (this.radarRadius / levels) * d)
+            .attr("class", "grid-circle")
+            .style("stroke", "white")
+            .style("fill-opacity", 0.0);
+    }
 
-                console.log("Sorting column:", column);
-                currentSortColumn = column;
-                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
-                sortAndRender(data);
-            });
-
-        // Add table rows and cells
-        const rows = tbody.selectAll("tr")
-            .data(data.slice(0, 10)) // Show top 10 players
+    // Draw axes
+    drawAxes() {
+        const radarAxes = this.svg
+            .selectAll(".axis")
+            .data(this.columns.map(col => ({ axis: col })))
             .enter()
-            .append("tr");
+            .append("g")
+            .attr("class", "axis");
 
-        rows.selectAll("td")
-            .data(row => headers.map(column => (column === 'Lock' ? { type: 'lock', row } : row[column])))
+        radarAxes
+            .append("line")
+            .attr("x1", 0)
+            .attr("y1", 0)
+            .attr("x2", (_, i) => this.radarScale(1) * Math.cos(this.radarAngleSlice * i - Math.PI / 2))
+            .attr("y2", (_, i) => this.radarScale(1) * Math.sin(this.radarAngleSlice * i - Math.PI / 2))
+            .style("stroke", "white")
+            .style("stroke-width", 1.5);
+
+        radarAxes
+            .append("text")
+            .attr("x", (_, i) => this.radarScale(1.1) * Math.cos(this.radarAngleSlice * i - Math.PI / 2))
+            .attr("y", (_, i) => this.radarScale(1.1) * Math.sin(this.radarAngleSlice * i - Math.PI / 2))
+            .style("fill", "white")
+            .style("text-anchor", "middle")
+            .text(d => d.axis);
+    }
+
+    // Draw grid labels
+    drawGridLabels(levels) {
+        this.svg
+            .selectAll(".grid-label")
+            .data(d3.range(1, levels + 1).reverse())
             .enter()
-            .append("td")
-            .each(function (d, i) {
-                const column = headers[i];
-                if (d && d.type === 'lock') {
-                    d3.select(this)
-                        .append("button")
-                        .text(lockedPlayers.some(p => p.Player === d.row.Player) ? "Unlock" : "Lock")
-                        .attr("class", "btn btn-sm btn-secondary")
-                        .on("click", () => {
-                            console.log("Toggling lock for player:", d.row.Player);
-                            toggleLockPlayer(d.row);
-                            sortAndRender(DataManager.getFilteredData());
-                        });
-                } else {
-                    d3.select(this)
-                        .text(d)
-                        .style("background-color", () => {
-                            if (colorScales[column] && !isNaN(d)) {
-                                return colorScales[column](+d);
-                            }
-                            return "transparent";
-                        });
-                }
-            });
+            .append("text")
+            .attr("x", 0)
+            .attr("y", d => -this.radarScale(d / levels))
+            .attr("class", "grid-label")
+            .attr("dy", "-0.3em")
+            .style("fill", "white")
+            .style("text-anchor", "middle")
+            .text(d => `${(d / levels) * 100}%`);
     }
 
-    // Toggle lock/unlock for a player
-    function toggleLockPlayer(player) {
-        const isLocked = lockedPlayers.some(p => p.Player === player.Player);
-        if (isLocked) {
-            console.log("Unlocking player:", player.Player);
-            lockedPlayers = lockedPlayers.filter(p => p.Player !== player.Player);
-        } else {
-            console.log("Locking player:", player.Player);
-            lockedPlayers.push(player);
-        }
-        console.log("Current locked players:", lockedPlayers);
-
-        // Reapply filters and render
-        sortAndRender(DataManager.getFilteredData());
+    // Draw individual player polygons
+    drawPlayerPolygons(data, color = "blue") {
+        this.svg
+            .selectAll(".radar-area")
+            .data(data)
+            .enter()
+            .append("path")
+            .attr("class", "radar-area")
+            .attr("d", d => this.radarLine(d.axes))
+            .style("fill", color)
+            .style("fill-opacity", 0.3)
+            .style("stroke", color)
+            .style("stroke-width", 4);
     }
 
-    // Sort and render data
-    function sortAndRender(data) {
-        console.log("Sorting data. Locked players:", lockedPlayers);
+    // Initialize and render the radar graph
+    render(data) {
+        // Clear previous content
+        this.svg.selectAll("*").remove();
 
-        // Combine locked players with filtered data
-        const uniqueLockedPlayers = lockedPlayers.filter(player =>
-            !data.some(filteredPlayer => filteredPlayer.Player === player.Player)
-        );
-        const unlockedPlayers = data.filter(player =>
-            !lockedPlayers.some(locked => locked.Player === player.Player)
-        );
+        // Draw grid and axes
+        this.drawGridLines(5);
+        this.drawAxes();
+        this.drawGridLabels(5);
 
-        // Sort unlocked players
-        if (currentSortColumn) {
-            unlockedPlayers.sort((a, b) => {
-                if (currentSortOrder === 'asc') {
-                    return +a[currentSortColumn] - +b[currentSortColumn];
-                } else {
-                    return +b[currentSortColumn] - +a[currentSortColumn];
-                }
-            });
-        }
-
-        // Combine locked players at the top
-        const combinedData = [...lockedPlayers, ...unlockedPlayers];
-        console.log("Combined data after sorting:", combinedData);
-        updateHeatmap(combinedData);
+        // Draw player polygons
+        this.drawPlayerPolygons(data);
     }
+}
 
-    // Register the heatmap with the filtered data
-    DataManager.registerListener(data => {
-        console.log("Data received from DataManager:", data);
-        const combinedData = [
-            ...lockedPlayers.filter(player =>
-                !data.some(filteredPlayer => filteredPlayer.Player === player.Player)
-            ),
-            ...data
-        ];
-        initializeColorScales(data);
-        sortAndRender(combinedData);
-    });
+// Initialize RadarGraph
+function initRadarGraph() {
+    const radarColumns = ['Goals', 'Assists', 'PasTotCmp%', 'SoT', 'MP'];
+    const radarGraph = new RadarGraph("#radar", radarColumns);
 
-    // Add event listeners for filters
-    d3.select("#min-age").on("input", function () {
-        console.log("Min age filter input:", this.value);
-        DataManager.updateFilters({ ageRange: { min: +this.value || 0 } });
-    });
-
-    d3.select("#max-age").on("input", function () {
-        console.log("Max age filter input:", this.value);
-        DataManager.updateFilters({ ageRange: { max: +this.value || Infinity } });
-    });
-
-    d3.selectAll("#league-filter input[type=checkbox]").on("change", function () {
-        const selectedLeagues = Array.from(
-            d3.selectAll("#league-filter input[type=checkbox]:checked").nodes()
-        ).map(input => input.value);
-        console.log("Selected leagues:", selectedLeagues);
-        DataManager.updateFilters({ leagues: selectedLeagues });
-    });
-
-    d3.select("#player-search").on("input", function () {
-        console.log("Search input:", this.value);
-        DataManager.updateFilters({ searchTerm: this.value });
-    });
-
-    // Add position filter event listener
-    d3.selectAll("#position-filter button").on("click", function () {
-        const position = d3.select(this).attr("data-position");
-        console.log("Position filter selected:", position);
-        DataManager.updateFilters({ positionCategory: position });
-    });
-
-    // Load the data
     DataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
         Age: value => +value,
         MP: value => +value,
@@ -193,6 +137,21 @@ document.addEventListener('DOMContentLoaded', () => {
         SoT: value => +value,
         'PasTotCmp%': value => +value,
         Assists: value => +value
+    }).then(() => {
+        // Register a listener to update the radar graph when data is loaded
+        DataManager.registerListener((data) => {
+            // Prepare radar data from filtered data
+            const radarData = radarGraph.prepareRadarData(data, radarColumns);
+            
+            // Render the graph
+            radarGraph.render(radarData);
+        });
+    }).catch(error => {
+        console.error("Error loading data:", error);
     });
+}
 
-});
+// Call initialization when DOM is ready
+document.addEventListener('DOMContentLoaded', initRadarGraph);
+
+export { RadarGraph };

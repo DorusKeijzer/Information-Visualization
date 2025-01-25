@@ -1,367 +1,177 @@
-/************************
- *  Constants & Config
- ************************/
-const radarWidth = 900;
-const radarHeight = 750;
-const radarMargin = { top: 50, right: 50, bottom: 50, left: 50 };
-
-/************************
- *  Data
- ************************/
-
-const radarData = [
-  {
-    name: "Player A",
-    axes: [
-      { axis: "Shooting", value: 0.8 },
-      { axis: "Passing", value: 0.6 },
-      { axis: "Dribbling", value: 0.7 },
-      { axis: "Defending", value: 0.4 },
-      { axis: "Physical", value: 0.9 },
-    ],
-    team_selection: true,
-  },
-  {
-    name: "Player B",
-    axes: [
-      { axis: "Shooting", value: 0.5 },
-      { axis: "Passing", value: 0.7 },
-      { axis: "Dribbling", value: 0.8 },
-      { axis: "Defending", value: 0.6 },
-      { axis: "Physical", value: 0.6 },
-    ],
-    team_selection: true,
-  },
-  {
-    name: "Player C",
-    axes: [
-      { axis: "Shooting", value: 0.9 },
-      { axis: "Passing", value: 0.3 },
-      { axis: "Dribbling", value: 0.4 },
-      { axis: "Defending", value: 0.6 },
-      { axis: "Physical", value: 0.4 },
-    ],
-    team_selection: true,
-  },
-  {
-    name: "Player D",
-    axes: [
-      { axis: "Shooting", value: 0.7 },
-      { axis: "Passing", value: 0.8 },
-      { axis: "Dribbling", value: 0.6 },
-      { axis: "Defending", value: 0.5 },
-      { axis: "Physical", value: 0.7 },
-    ],
-    team_selection: true,
-  },
-  {
-    name: "Player E",
-    axes: [
-      { axis: "Shooting", value: 0.6 },
-      { axis: "Passing", value: 0.7 },
-      { axis: "Dribbling", value: 0.9 },
-      { axis: "Defending", value: 0.4 },
-      { axis: "Physical", value: 0.5 },
-    ],
-    team_selection: true,
-  },
-  {
-    name: "Player F",
-    axes: [
-      { axis: "Shooting", value: 0.4 },
-      { axis: "Passing", value: 0.6 },
-      { axis: "Dribbling", value: 0.5 },
-      { axis: "Defending", value: 0.7 },
-      { axis: "Physical", value: 0.8 },
-    ],
-    team_selection: true,
-  },
-  {
-    name: "Player G",
-    axes: [
-      { axis: "Shooting", value: 0.8 },
-      { axis: "Passing", value: 0.5 },
-      { axis: "Dribbling", value: 0.6 },
-      { axis: "Defending", value: 0.7 },
-      { axis: "Physical", value: 0.9 },
-    ],
-    team_selection: true,
-  },
-  {
-    name: "Player H",
-    axes: [
-      { axis: "Shooting", value: 0.7 },
-      { axis: "Passing", value: 0.6 },
-      { axis: "Dribbling", value: 0.7 },
-      { axis: "Defending", value: 0.6 },
-      { axis: "Physical", value: 0.7 },
-    ],
-    team_selection: true,
-  },
-  {
-    name: "Player I",
-    axes: [
-      { axis: "Shooting", value: 0.9 },
-      { axis: "Passing", value: 0.8 },
-      { axis: "Dribbling", value: 0.7 },
-      { axis: "Defending", value: 0.5 },
-      { axis: "Physical", value: 0.6 },
-    ],
-    team_selection: false,
-  },
-  {
-    name: "Player J",
-    axes: [
-      { axis: "Shooting", value: 0.6 },
-      { axis: "Passing", value: 0.7 },
-      { axis: "Dribbling", value: 0.8 },
-      { axis: "Defending", value: 0.6 },
-      { axis: "Physical", value: 0.8 },
-    ],
-    team_selection: true,
-  },
-];
 
 
-const team = radarData.filter(player => player.team_selection);
-const non_team = radarData.filter(player => !player.team_selection);
 
-/************************
- *  Setup & Calculations
- ************************/
-// Calculate radius and angle
-const radarRadius = Math.min(radarWidth, radarHeight) / 2 - radarMargin.top;
-const radarAngleSlice = (Math.PI * 2) / radarData[0].axes.length;
+import { DataManager } from './datamanager.js';
 
-// Create SVG
-const radarSvg = d3
-  .select("#radar")
-  .append("svg")
-  .attr("width", radarWidth)
-  .attr("height", radarHeight)
-  .append("g")
-  .attr("transform", `translate(${radarWidth / 2}, ${radarHeight / 2})`);
+class RadarGraph {
+  constructor(selector, columns) {
+    console.log("RadarGraph constructor called");
+    this.columns = columns;
+    this.radarWidth = 600;
+    this.radarHeight = 600;
+    this.radarMargin = { top: 50, right: 50, bottom: 50, left: 50 };
+    this.radarRadius = Math.min(this.radarWidth, this.radarHeight) / 2 - this.radarMargin.top;
+    this.radarAngleSlice = (Math.PI * 2) / columns.length;
 
-// Define radial scale
-const radarScale = d3.scaleLinear().range([0, radarRadius]).domain([0, 1]);
+    this.selector = selector;
 
-/************************
- *  Grid Functions
- ************************/
-function draw_grid_area(levels) {
-  radarSvg
-    .selectAll(".grid-circle")
-    .data(d3.range(1, levels + 1).reverse())
-    .enter()
-    .append("circle")
-    .attr("r", d => (radarRadius / levels) * d)
-    .attr("class", "grid-circle")
-    .style("fill", "#2c6a9b")
-    .style("fill-opacity", 1.0);
+    // Create SVG
+    console.log("Creating SVG element in selector:", selector);
+    this.svg = d3.select(selector)
+      .append("svg")
+      .attr("width", this.radarWidth)
+      .attr("height", this.radarHeight)
+      .append("g")
+      .attr("transform", `translate(${this.radarWidth / 2}, ${this.radarHeight / 2})`);
+    console.log("SVG element created:", this.svg);
+
+    // Define radial scale
+    console.log("Defining radial scale with range [0, radarRadius]:", this.radarRadius);
+    this.radarScale = d3.scaleLinear().range([0, this.radarRadius]).domain([0, 1]);
+
+    // Line generator for radar polygons
+    console.log("Defining line generator for radar polygons");
+    this.radarLine = d3.lineRadial()
+      .radius(d => this.radarScale(d.value))
+      .angle((_, i) => i * this.radarAngleSlice)
+      .curve(d3.curveLinearClosed);
+  }
+
+  prepareRadarData(data, columns) {
+    console.log("Preparing radar data with columns:", columns);
+    console.log("Sample data:", data[0]);
+    console.log("Total data points:", data.length);
+
+    return data.map(player => {
+      const axes = columns.map(col => {
+        const value = +player[col];
+        const maxValue = Math.max(...data.map(d => +d[col] || 0));
+        console.log(`Column: ${col}, Value: ${value}, Max Value: ${maxValue}`);
+        return {
+          axis: col,
+          value: maxValue ? value / maxValue : 0
+        };
+      });
+
+      console.log("Prepared axes for player:", player.Player, axes);
+      return {
+        name: player.Player,
+        axes: axes,
+        team_selection: true
+      };
+    });
+  }
+
+  render(data) {
+    try {
+      console.log("Rendering radar graph");
+      console.log("Rendering in selector:", this.selector);
+      console.log("Data to render:", data);
+
+      // Verify the container exists
+      const container = d3.select(this.selector);
+      console.log("Container exists:", !container.empty());
+
+      // Clear previous content
+      container.selectAll("svg").remove();
+
+      // Recreate SVG
+      this.svg = container
+        .append("svg")
+        .attr("width", this.radarWidth)
+        .attr("height", this.radarHeight)
+        .append("g")
+        .attr("transform", `translate(${this.radarWidth / 2}, ${this.radarHeight / 2})`);
+      console.log("SVG recreated:", this.svg);
+
+      // Draw grid
+      const gridData = d3.range(1, 6).reverse();
+      console.log("Drawing grid with data:", gridData);
+      this.svg.selectAll(".grid-circle")
+        .data(gridData)
+        .enter()
+        .append("circle")
+        .attr("r", d => (this.radarRadius / 5) * d)
+        .style("fill", "none")
+        .style("stroke", "white")
+        .style("stroke-opacity", 0.5);
+
+      // Draw axes
+      console.log("Drawing axes for columns:", this.columns);
+      const axesGroup = this.svg.selectAll(".axis")
+        .data(this.columns)
+        .enter()
+        .append("g")
+        .attr("class", "axis");
+
+      axesGroup.append("line")
+        .attr("x1", 0)
+        .attr("y1", 0)
+        .attr("x2", (d, i) => this.radarScale(1) * Math.cos(this.radarAngleSlice * i - Math.PI / 2))
+        .attr("y2", (d, i) => this.radarScale(1) * Math.sin(this.radarAngleSlice * i - Math.PI / 2))
+        .style("stroke", "white");
+
+      axesGroup.append("text")
+        .attr("x", (d, i) => this.radarScale(1.1) * Math.cos(this.radarAngleSlice * i - Math.PI / 2))
+        .attr("y", (d, i) => this.radarScale(1.1) * Math.sin(this.radarAngleSlice * i - Math.PI / 2))
+        .style("fill", "white")
+        .style("text-anchor", "middle")
+        .text(d => d);
+
+      // Draw player polygons
+      console.log("Drawing radar polygons for first 5 players");
+      this.svg.selectAll(".radar-area")
+        .data(data.slice(0, 5)) // Limit to first 5 players
+        .enter()
+        .append("path")
+        .attr("class", "radar-area")
+        .attr("d", d => {
+          const path = this.radarLine(d.axes);
+          console.log("Generated path for player:", d.name, path);
+          return path;
+        })
+        .style("fill", (d, i) => d3.schemeCategory10[i])
+        .style("fill-opacity", 0.3)
+        .style("stroke", (d, i) => d3.schemeCategory10[i])
+        .style("stroke-width", 2);
+    }
+    catch (error) {
+      console.error("Rendering error:", error);
+    }
+  }
 }
 
-function draw_grid_lines(levels) {
-  radarSvg
-    .selectAll(".grid-circle")
-    .data(d3.range(1, levels + 1).reverse())
-    .enter()
-    .append("circle")
-    .attr("r", d => (radarRadius / levels) * d)
-    .attr("class", "grid-circle")
-    .style("stroke", "white")
-    .style("fill-opacity", 0.0);
-}
 
-function draw_grid_labels(levels) {
-  radarSvg
-    .selectAll(".grid-label")
-    .data(d3.range(1, levels + 1).reverse())
-    .enter()
-    .append("text")
-    .attr("x", 0)
-    .attr("y", d => -radarScale(d / levels))
-    .attr("class", "grid-label")
-    .attr("dy", "-0.3em")
-    .style("fill", "white")
-    .style("text-anchor", "middle")
-    .text(d => `${(d / levels) * 100}%`);
-}
 
-/************************
- *  Axes Functions
- ************************/
-function draw_axes() {
-  const radarAxes = radarSvg
-    .selectAll(".axis")
-    .data(radarData[0].axes)
-    .enter()
-    .append("g")
-    .attr("class", "axis");
+function initRadarGraph() {
+  console.log("Initializing Radar Graph");
+  const radarColumns = ['Goals', 'Assists', 'PasTotCmp%', 'SoT', 'MP'];
+  console.log("Radar container exists:", document.querySelector("#radar") !== null);
 
-  radarAxes
-    .append("line")
-    .attr("x1", 0)
-    .attr("y1", 0)
-    .attr("x2", (_, i) => radarScale(1) * Math.cos(radarAngleSlice * i - Math.PI / 2))
-    .attr("y2", (_, i) => radarScale(1) * Math.sin(radarAngleSlice * i - Math.PI / 2))
-    .style("stroke", "white")
-    .style("stroke-width", 1.5);
+  const radarGraph = new RadarGraph("#radar", radarColumns);
 
-  radarAxes
-    .append("text")
-    .attr("x", (_, i) => radarScale(1.1) * Math.cos(radarAngleSlice * i - Math.PI / 2))
-    .attr("y", (_, i) => radarScale(1.1) * Math.sin(radarAngleSlice * i - Math.PI / 2))
-    .style("fill", "white")
-    .style("text-anchor", "middle")
-    .text(d => d.axis);
-}
+  DataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
+    Age: value => +value,
+    MP: value => +value,
+    Goals: value => +value,
+    SoT: value => +value,
+    'PasTotCmp%': value => +value,
+    Assists: value => +value
+  }).then(() => {
+    console.log("Data loaded, registering listener");
+    DataManager.registerListener((data) => {
+      console.log("Listener triggered with data length:", data.length);
+      const radarData = radarGraph.prepareRadarData(data, radarColumns);
+      console.log("Prepared radar data:", radarData);
 
-/************************
- *  Polygon Drawing Setup
- ************************/
-// Draw radar polygons using polar coordinates
-const radarLine = d3
-  .lineRadial()
-  .radius(d => radarScale(d.value))
-  .angle((_, i) => i * radarAngleSlice)
-  .curve(d3.curveLinearClosed);
-
-// Convert polar coordinates to cartesian coordinates
-function polar2Cartesian(r, theta) {
-  return [Math.sin(theta) * r, -Math.cos(theta) * r];
-}
-
-function player2Points(player) {
-  const points = player.axes.map((d, i) => {
-    const r = radarScale(d.value);
-    const theta = i * radarAngleSlice;
-    return polar2Cartesian(r, theta);
+      radarGraph.render(radarData);
+    });
+  }).catch(error => {
+    console.error("Error loading data:", error);
   });
-  points.push(points[0]); // Close the polygon
-  return points;
 }
 
-/************************
- *  Polygon Generation
- ************************/
-const playerPolygons = team.map(player => {
-  return turf.polygon([player2Points(player)]);
-});
+document.addEventListener('DOMContentLoaded', initRadarGraph);
 
-// Compute the union of all player polygons using Turf.js
-let unionPolygon = turf.union(turf.featureCollection(playerPolygons));
-
-// Create a line generator for D3
-const lineGenerator = d3.line()
-  .x(d => d[0])
-  .y(d => d[1]);
-
-/************************
- *  Drawing Functions
- ************************/
-function normalize(data, propertyName) {
-    // First, extract the values for the specified property
-    const values = data.map(item => Number(item[propertyName]));
-    
-    // Find the maximum value
-    const maxValue = Math.max(...values);
-    
-    // Return new array with normalized values
-    return data.map(item => ({
-        ...item,
-        [`normalized${propertyName}`]: Number(item[propertyName]) / maxValue
-    }));
-}
-
-
-
-
-function draw_union(unionPolygon) {
-  const coordinates = unionPolygon.geometry.coordinates[0];
-  radarSvg
-    .append("path")
-    .datum(coordinates)
-    .attr("d", lineGenerator)
-    .attr("class", "team-hull")
-    .style("fill", "red")
-    .style("fill-opacity", 0.4)
-    .style("stroke", "red")
-    .style("stroke-opacity", 0.4)
-    .style("stroke-width", 4);
-}
-
-function draw_individual(set_of_players, color) {
-  radarSvg
-    .selectAll(".radar-area")
-    .data(set_of_players)
-    .enter()
-    .append("path")
-    .attr("class", "radar-area")
-    .attr("d", d => radarLine(d.axes))
-    .style("fill", color)
-    .style("fill-opacity", 0.3)
-    .style("stroke", color)
-    .style("stroke-width", 4);
-}
-
-/************************
- *  Initialization
- ************************/
-
-const jsonFilePath = "../webapp/data/2022-2023_Football_Player_Stats.json";
-
-d3.json("../webapp/data/2022-2023_Football_Player_Stats.json").then(data => {
-  console.log(data);
-  const team = data.filter(d => d.Squad == "Leeds United")
-  console.log(team)
-
-  goals = team.map(d => Number(d.Goals));
-  goals = goals.map(d => d / Math.max(...goals));
-  console.log(goals)
-
-  pass_complete = team.map(d => Number(d.PasTotCmp));
-  //pass_complete = normalize(pass_complete)
-
-  console.log(team, non_team.Player)
-})
-
-
-draw_grid_lines(5);
-draw_axes();
-
-if (unionPolygon) {
-  draw_union(unionPolygon);
-}
-draw_individual(non_team, "blue");
-draw_grid_labels(5);
-
-/************************
- *  Interactivity
- ************************/
-// Add tooltips
-radarSvg
-  .selectAll(".radar-area")
-  .on("mouseover", function(event, d) {
-    d3.select(this)
-      .style("fill-opacity", 0.6)
-      .style("cursor", "pointer");
-    
-    radarSvg
-      .append("text")
-      .attr("class", "tooltip")
-      .attr("x", 0)
-      .attr("y", -radarRadius - 10)
-      .style("text-anchor", "middle")
-      .style("fill", "white")
-      .text(d.name);
-  })
-  .on("mouseout", function() {
-    d3.select(this)
-      .style("fill-opacity", 0.3)
-      .style("cursor", "default");
-    
-    radarSvg.selectAll(".tooltip").remove();
-  });
-
-
+export { RadarGraph };
 
