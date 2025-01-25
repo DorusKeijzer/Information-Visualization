@@ -1,6 +1,6 @@
-
 import { DataManager } from './datamanager.js';
 
+// Existing positionAttributes object remains the same
 const positionAttributes = {
   striker: [
     "Goals",        // Goals scored
@@ -28,6 +28,7 @@ const positionAttributes = {
   ],
 };
 
+// Existing transformToPercentages and other functions remain the same
 function transformToPercentages(data, positionCategory) {
   const maxValues = {};
   const relevantAttributes = positionAttributes[positionCategory.toLowerCase()] || [];
@@ -75,7 +76,11 @@ function transformToPercentages(data, positionCategory) {
   return percentageData;
 }
 
+
 function createRadarMatrix(containerId, data, positionCategory) {
+  // Clear existing content before creating new charts
+  d3.select(containerId).selectAll('*').remove();
+
   console.log("Creating radar matrix for data:", data);
 
   const numPlayers = data.length;
@@ -98,7 +103,10 @@ function createRadarMatrix(containerId, data, positionCategory) {
   // Adjust label positioning to avoid intersection with the chart
   const labelOffset = rScale(100) + 25;  // Increase the label offset to push it further out
 
-  function drawRadarChart(playerData1, playerData2, playerName1, playerName2, xOffset, yOffset, isDiagonal) {
+  // Generate a color scale for each player (you can use any color scale you prefer)
+  const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+  function drawRadarChart(playerData1, playerData2, playerName1, playerName2, xOffset, yOffset, isDiagonal, playerIndex1, playerIndex2) {
     const playerDataArray1 = relevantAttributes.map(attribute => playerData1[attribute]);
     const playerDataArray2 = relevantAttributes.map(attribute => playerData2[attribute]);
 
@@ -137,19 +145,22 @@ function createRadarMatrix(containerId, data, positionCategory) {
         .data([playerDataArray1])
         .attr('class', 'radar-chart')
         .attr('d', radarLine)
-        .style('fill', 'orange')
-        .style('stroke', 'orange')
+        .style('fill', colorScale(playerIndex1))
+        .style('stroke', colorScale(playerIndex1))
         .style('stroke-width', 2)
         .style('opacity', 0.5);
     }
     // Non-diagonal case (different players)
     else {
+      const color1 = colorScale(playerIndex1);
+      const color2 = colorScale(playerIndex2);
+
       const chart1 = chartGroup.append('path')
         .data([playerDataArray1])
         .attr('class', 'radar-chart')
         .attr('d', radarLine)
-        .style('fill', 'blue')
-        .style('stroke', 'blue')
+        .style('fill', color1)
+        .style('stroke', color1)
         .style('stroke-width', 2)
         .style('opacity', 0.5);
 
@@ -157,8 +168,8 @@ function createRadarMatrix(containerId, data, positionCategory) {
         .data([playerDataArray2])
         .attr('class', 'radar-chart')
         .attr('d', radarLine)
-        .style('fill', 'red')
-        .style('stroke', 'red')
+        .style('fill', color2)
+        .style('stroke', color2)
         .style('stroke-width', 2)
         .style('opacity', 0.5);
     }
@@ -197,16 +208,20 @@ function createRadarMatrix(containerId, data, positionCategory) {
         .attr('stroke-width', 2);
     });
   }
+
   // Loop through all player pairs and create radar charts
   data.forEach((player1, i) => {
     data.forEach((player2, j) => {
-      const xOffset = j * (width + margin.left + margin.right);
-      const yOffset = i * (height + margin.top + margin.bottom);
+      // Show only the top-right diagonal and above (i <= j)
+      if (i <= j) {
+        const xOffset = (numPlayers - 1 - j) * (width + margin.left + margin.right); // Reverse the horizontal axis
+        const yOffset = i * (height + margin.top + margin.bottom);
 
-      // Check if it's a diagonal chart (same player)
-      const isDiagonal = i === j;
+        // Check if it's a diagonal chart (same player)
+        const isDiagonal = i === j;
 
-      drawRadarChart(player1, player2, player1.Player, player2.Player, xOffset, yOffset, isDiagonal);
+        drawRadarChart(player1, player2, player1.Player, player2.Player, xOffset, yOffset, isDiagonal, i, j);
+      }
     });
   });
 }
@@ -227,4 +242,76 @@ dataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
   // Add any other column processors here as needed
 });
 
+
+
+function updateRadarGraph() {
+  const selectedProfile = document.getElementById('profileDropdown').value;
+
+  // Update the list of stats in the UI with clickable elements
+  const statsList = document.getElementById('statsList');
+  statsList.innerHTML = '';
+  positionAttributes[selectedProfile].forEach(stat => {
+    const listItem = document.createElement('li');
+    listItem.textContent = stat;
+    listItem.classList.add('stat-item');
+    listItem.setAttribute('data-stat', stat);
+    listItem.addEventListener('click', () => sortDataByStat(stat));
+    statsList.appendChild(listItem);
+  });
+
+  // Re-create the radar matrix with the new profile
+  const dataManager = DataManager;
+  
+  dataManager.registerListener((filteredData) => {
+    const transformedData = transformToPercentages(filteredData.slice(9, 13), selectedProfile);
+    createRadarMatrix('#radar-matrix', transformedData, selectedProfile);
+  });
+
+  dataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
+    Age: value => parseInt(value),
+  });
+}
+function sortDataByStat(stat) {
+  const dataManager = DataManager;
+  const selectedProfile = document.getElementById('profileDropdown').value;
+
+  // Highlight the clicked stat
+  document.querySelectorAll('.stat-item').forEach(item => {
+    item.classList.remove('active-stat');
+  });
+  event.target.classList.add('active-stat');
+
+  dataManager.registerListener((filteredData) => {
+    // Sort the data based on the selected stat
+    const sortedData = filteredData.slice(9, 13).sort((a, b) => {
+      // Convert to number for numeric sorting
+      const valueA = parseFloat(a[stat]) || 0;
+      const valueB = parseFloat(b[stat]) || 0;
+      return valueB - valueA; // Sort in descending order
+    });
+
+    const transformedData = transformToPercentages(sortedData, selectedProfile);
+    createRadarMatrix('#radar-matrix', transformedData, selectedProfile);
+  });
+
+  dataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
+    Age: value => parseInt(value),
+  });
+}
+
+
+
+
+// Initial setup
+document.addEventListener('DOMContentLoaded', () => {
+  const initialProfile = 'striker';
+  document.getElementById('profileDropdown').value = initialProfile;
+  updateRadarGraph();
+
+  // Add event listener for dropdown changes
+  document.getElementById('profileDropdown').addEventListener('change', updateRadarGraph);
+});
+
+// Export the functions and attributes for potential use in other modules
+export { positionAttributes, updateRadarGraph, createRadarMatrix, transformToPercentages };
 
