@@ -76,69 +76,77 @@ function transformToPercentages(data, positionCategory) {
   return percentageData;
 }
 
-
 function createRadarMatrix(containerId, data, positionCategory) {
   // Clear existing content before creating new charts
   d3.select(containerId).selectAll('*').remove();
-
   console.log("Creating radar matrix for data:", data);
-
   const numPlayers = data.length;
-  const margin = { top: 60, right: 0, bottom: 15, left: 60 };
-  const width = 160 - margin.left - margin.right;
-  const height = 160 - margin.top - margin.bottom;
-
+  
+  // Dynamically calculate margins and sizes based on number of players
+  const baseWidth = 300;  // Increased base width
+  const baseHeight = 300;  // Increased base height
+  const margin = { 
+    top: 80, 
+    right: 30, 
+    bottom: 30, 
+    left: 80 
+  };
+  
+  // Calculate width and height dynamically
+  const width = Math.max(baseWidth / numPlayers, 100);
+  const height = Math.max(baseHeight / numPlayers, 100);
+  
   const svgContainer = d3.select(containerId)
     .append('svg')
     .attr('width', (width + margin.left + margin.right) * numPlayers)
     .attr('height', (height + margin.top + margin.bottom) * numPlayers)
     .append('g')
     .attr('transform', `translate(${margin.left}, ${margin.top})`);
-
+  
   const relevantAttributes = positionAttributes[positionCategory.toLowerCase()] || [];
   const angleSlice = Math.PI * 2 / relevantAttributes.length;
-
-  const rScale = d3.scaleLinear().range([0, Math.min(width, height) / 1.4]).domain([0, 100]);  // Increase range to 1.4
-
-  // Adjust label positioning to avoid intersection with the chart
-  const labelOffset = rScale(100) + 25;  // Increase the label offset to push it further out
-
-  // Generate a color scale for each player (you can use any color scale you prefer)
+  const rScale = d3.scaleLinear()
+    .range([0, Math.min(width, height) / 2])  // Reduced range to keep charts proportional
+    .domain([0, 100]);
+  
+  const labelOffset = rScale(100) + 20;
   const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
-
+  
   function drawRadarChart(playerData1, playerData2, playerName1, playerName2, xOffset, yOffset, isDiagonal, playerIndex1, playerIndex2) {
     const playerDataArray1 = relevantAttributes.map(attribute => playerData1[attribute]);
     const playerDataArray2 = relevantAttributes.map(attribute => playerData2[attribute]);
-
+    
     const radarLine = d3.lineRadial()
       .radius(d => rScale(d))
       .angle((d, i) => i * angleSlice);
-
+    
     const chartGroup = svgContainer.append('g')
       .attr('transform', `translate(${xOffset}, ${yOffset})`);
+    
+    // Row labels (left side)
     if (xOffset === 0) {
       chartGroup.append('text')
-        .attr('x', -2)
-        .attr('y', -margin.left + 15)
+        .attr('x', 50)
+        .attr('y', -50)
+        .attr('text-anchor', 'end')
         .attr('transform', 'rotate(-90)')
-        .attr('text-anchor', 'middle')
-        .attr('alignment-baseline', 'end')
+        .attr('alignment-baseline', 'middle')
         .text(playerName1)
-        .style('font-size', '17px')
+        .style('font-size', '12px')
         .style('fill', 'white');
     }
-
-    // Add column labels on the top row
+    
+    // Column labels (top row)
     if (yOffset === 0) {
       chartGroup.append('text')
         .attr('x', 0)
-        .attr('y', -margin.left + 20)
+        .attr('y', -margin.top + 10)
         .attr('text-anchor', 'middle')
         .text(playerName2)
-        .style('font-size', '17px')
+        .style('font-size', '12px')
         .style('fill', 'white');
     }
-
+    
     // Diagonal case (same player)
     if (isDiagonal) {
       const chart = chartGroup.append('path')
@@ -154,7 +162,6 @@ function createRadarMatrix(containerId, data, positionCategory) {
     else {
       const color1 = colorScale(playerIndex1);
       const color2 = colorScale(playerIndex2);
-
       const chart1 = chartGroup.append('path')
         .data([playerDataArray1])
         .attr('class', 'radar-chart')
@@ -163,7 +170,6 @@ function createRadarMatrix(containerId, data, positionCategory) {
         .style('stroke', color1)
         .style('stroke-width', 2)
         .style('opacity', 0.5);
-
       const chart2 = chartGroup.append('path')
         .data([playerDataArray2])
         .attr('class', 'radar-chart')
@@ -173,29 +179,30 @@ function createRadarMatrix(containerId, data, positionCategory) {
         .style('stroke-width', 2)
         .style('opacity', 0.5);
     }
-
+    
     // Draw axes and labels
     const axisLabels = relevantAttributes.map((attribute, i) => {
       const angle = i * angleSlice;
       const label = chartGroup.append('text')
-        .attr('x', labelOffset * Math.cos(angle - Math.PI / 2))  // Increase offset here
-        .attr('y', labelOffset * Math.sin(angle - Math.PI / 2))  // Increase offset here
+        .attr('x', labelOffset * Math.cos(angle - Math.PI / 2))
+        .attr('y', labelOffset * Math.sin(angle - Math.PI / 2))
         .attr('text-anchor', 'middle')
         .text(attribute)
         .style('visibility', 'hidden')
+        .style('font-size', '10px')
         .style('fill', 'white');
       return label;
     });
-
+    
     // Hover interactions for showing axis labels
     chartGroup.on('mouseover', () => {
       axisLabels.forEach(label => label.style('visibility', 'visible'));
     });
-
+    
     chartGroup.on('mouseout', () => {
       axisLabels.forEach(label => label.style('visibility', 'hidden'));
     });
-
+    
     // Draw axis lines
     relevantAttributes.forEach((attribute, i) => {
       const angle = i * angleSlice;
@@ -208,18 +215,17 @@ function createRadarMatrix(containerId, data, positionCategory) {
         .attr('stroke-width', 2);
     });
   }
-
+  
   // Loop through all player pairs and create radar charts
   data.forEach((player1, i) => {
     data.forEach((player2, j) => {
       // Show only the top-right diagonal and above (i <= j)
       if (i <= j) {
-        const xOffset = (numPlayers - 1 - j) * (width + margin.left + margin.right); // Reverse the horizontal axis
-        const yOffset = i * (height + margin.top + margin.bottom);
-
+        const xOffset = (numPlayers - 1 - j) * (width + margin.left /15+ margin.right/15); // Reverse the horizontal axis
+        const yOffset = i * (height + margin.top/15 + margin.bottom/15);
+        
         // Check if it's a diagonal chart (same player)
         const isDiagonal = i === j;
-
         drawRadarChart(player1, player2, player1.Player, player2.Player, xOffset, yOffset, isDiagonal, i, j);
       }
     });
@@ -232,7 +238,7 @@ const dataManager = DataManager;
 // Register a listener to receive filtered data and create the radar matrix
 dataManager.registerListener((filteredData) => {
   const positionCategory = "defender";  // Example: Change this dynamically based on the position
-  const transformedData = transformToPercentages(filteredData.slice(9, 13), positionCategory);  // Adjust the number of players shown
+  const transformedData = transformToPercentages(filteredData.slice(9,15), positionCategory);  // Adjust the number of players shown
   createRadarMatrix('#radar-matrix', transformedData, positionCategory);
 });
 
@@ -261,9 +267,9 @@ function updateRadarGraph() {
 
   // Re-create the radar matrix with the new profile
   const dataManager = DataManager;
-  
+
   dataManager.registerListener((filteredData) => {
-    const transformedData = transformToPercentages(filteredData.slice(9, 13), selectedProfile);
+    const transformedData = transformToPercentages(filteredData.slice(9,15), selectedProfile);
     createRadarMatrix('#radar-matrix', transformedData, selectedProfile);
   });
 
@@ -283,7 +289,7 @@ function sortDataByStat(stat) {
 
   dataManager.registerListener((filteredData) => {
     // Sort the data based on the selected stat
-    const sortedData = filteredData.slice(9, 13).sort((a, b) => {
+    const sortedData = filteredData.slice(9,15).sort((a, b) => {
       // Convert to number for numeric sorting
       const valueA = parseFloat(a[stat]) || 0;
       const valueB = parseFloat(b[stat]) || 0;
