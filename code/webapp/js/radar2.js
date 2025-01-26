@@ -76,6 +76,9 @@ function transformToPercentages(data, positionCategory) {
   return percentageData;
 }
 
+// Create a color map to store player colors
+const playerColorMap = new Map();
+
 function createRadarMatrix(containerId, data, positionCategory) {
   // Clear existing content before creating new charts
   d3.select(containerId).selectAll('*').remove();
@@ -112,6 +115,13 @@ function createRadarMatrix(containerId, data, positionCategory) {
   const labelOffset = rScale(100) + 20;
   const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
   
+  // Assign colors to players if not already assigned
+  data.forEach((player, index) => {
+    if (!playerColorMap.has(player.Player)) {
+      playerColorMap.set(player.Player, colorScale(index));
+    }
+  });
+
   function drawRadarChart(playerData1, playerData2, playerName1, playerName2, xOffset, yOffset, isDiagonal, playerIndex1, playerIndex2) {
     const playerDataArray1 = relevantAttributes.map(attribute => playerData1[attribute]);
     const playerDataArray2 = relevantAttributes.map(attribute => playerData2[attribute]);
@@ -153,15 +163,15 @@ function createRadarMatrix(containerId, data, positionCategory) {
         .data([playerDataArray1])
         .attr('class', 'radar-chart')
         .attr('d', radarLine)
-        .style('fill', colorScale(playerIndex1))
-        .style('stroke', colorScale(playerIndex1))
+        .style('fill', playerColorMap.get(playerName1))
+        .style('stroke', playerColorMap.get(playerName1))
         .style('stroke-width', 2)
         .style('opacity', 0.5);
     }
     // Non-diagonal case (different players)
     else {
-      const color1 = colorScale(playerIndex1);
-      const color2 = colorScale(playerIndex2);
+      const color1 = playerColorMap.get(playerName1);
+      const color2 = playerColorMap.get(playerName2);
       const chart1 = chartGroup.append('path')
         .data([playerDataArray1])
         .attr('class', 'radar-chart')
@@ -238,7 +248,7 @@ const dataManager = DataManager;
 // Register a listener to receive filtered data and create the radar matrix
 dataManager.registerListener((filteredData) => {
   const positionCategory = "defender";  // Example: Change this dynamically based on the position
-  const transformedData = transformToPercentages(filteredData.slice(9,15), positionCategory);  // Adjust the number of players shown
+  const transformedData = transformToPercentages(filteredData.slice(9,14), positionCategory);  // Adjust the number of players shown
   createRadarMatrix('#radar-matrix', transformedData, positionCategory);
 });
 
@@ -247,8 +257,6 @@ dataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
   Age: value => parseInt(value),  // Example of column procesing
   // Add any other column processors here as needed
 });
-
-
 
 function updateRadarGraph() {
   const selectedProfile = document.getElementById('profileDropdown').value;
@@ -269,7 +277,7 @@ function updateRadarGraph() {
   const dataManager = DataManager;
 
   dataManager.registerListener((filteredData) => {
-    const transformedData = transformToPercentages(filteredData.slice(9,15), selectedProfile);
+    const transformedData = transformToPercentages(filteredData.slice(9,14), selectedProfile);
     createRadarMatrix('#radar-matrix', transformedData, selectedProfile);
   });
 
@@ -277,6 +285,7 @@ function updateRadarGraph() {
     Age: value => parseInt(value),
   });
 }
+
 function sortDataByStat(stat) {
   const dataManager = DataManager;
   const selectedProfile = document.getElementById('profileDropdown').value;
@@ -289,7 +298,7 @@ function sortDataByStat(stat) {
 
   dataManager.registerListener((filteredData) => {
     // Sort the data based on the selected stat
-    const sortedData = filteredData.slice(9,15).sort((a, b) => {
+    const sortedData = filteredData.slice(9,14).sort((a, b) => {
       // Convert to number for numeric sorting
       const valueA = parseFloat(a[stat]) || 0;
       const valueB = parseFloat(b[stat]) || 0;
@@ -304,9 +313,6 @@ function sortDataByStat(stat) {
     Age: value => parseInt(value),
   });
 }
-
-
-
 
 // Initial setup
 document.addEventListener('DOMContentLoaded', () => {
