@@ -28,7 +28,10 @@ const positionAttributes = {
   ],
 };
 
-// Existing transformToPercentages and other functions remain the same
+// Create a color map to store player colors
+const playerColorMap = new Map();
+
+// Existing transformToPercentages function remains the same
 function transformToPercentages(data, positionCategory) {
   const maxValues = {};
   const relevantAttributes = positionAttributes[positionCategory.toLowerCase()] || [];
@@ -76,10 +79,11 @@ function transformToPercentages(data, positionCategory) {
   return percentageData;
 }
 
-// Create a color map to store player colors
-const playerColorMap = new Map();
+let svgContainer; // Global variable to store the SVG container
+let radarGroups;  // Global variable to store the radar chart groups
+let rotationAngle = 0; // Global variable to store the rotation angle
 
-function createRadarMatrix(containerId, data, positionCategory) {
+function createRadarMatrix(containerId, data, positionCategory, sortAttribute = null) {
   // Clear existing content before creating new charts
   d3.select(containerId).selectAll('*').remove();
   console.log("Creating radar matrix for data:", data);
@@ -99,7 +103,7 @@ function createRadarMatrix(containerId, data, positionCategory) {
   const width = Math.max(baseWidth / numPlayers, 100);
   const height = Math.max(baseHeight / numPlayers, 100);
   
-  const svgContainer = d3.select(containerId)
+  svgContainer = d3.select(containerId)
     .append('svg')
     .attr('width', (width + margin.left + margin.right) * numPlayers)
     .attr('height', (height + margin.top + margin.bottom) * numPlayers)
@@ -115,6 +119,14 @@ function createRadarMatrix(containerId, data, positionCategory) {
   const labelOffset = rScale(100) + 20;
   const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
   
+  // Calculate rotation angle if sortAttribute is provided
+  if (sortAttribute) {
+    const attributeIndex = relevantAttributes.indexOf(sortAttribute);
+    if (attributeIndex !== -1) {
+      rotationAngle = -attributeIndex * angleSlice; // Negative for clockwise rotation
+    }
+  }
+
   // Assign colors to players if not already assigned
   data.forEach((player, index) => {
     if (!playerColorMap.has(player.Player)) {
@@ -130,12 +142,23 @@ function createRadarMatrix(containerId, data, positionCategory) {
       .radius(d => rScale(d))
       .angle((d, i) => i * angleSlice);
     
-    const chartGroup = svgContainer.append('g')
+    // Create a group for the radar chart (will rotate)
+    const radarGroup = svgContainer.append('g')
+      .attr('transform', `translate(${xOffset}, ${yOffset})`);
+    
+    // Apply rotation to the radar chart group
+    radarGroup
+      .transition() // Add transition for smooth animation
+      .duration(1000) // Animation duration in milliseconds
+      .attr('transform', `translate(${xOffset}, ${yOffset}) rotate(${rotationAngle * (180 / Math.PI)})`); // Convert radians to degrees
+    
+    // Create a separate group for labels (will not rotate)
+    const labelGroup = svgContainer.append('g')
       .attr('transform', `translate(${xOffset}, ${yOffset})`);
     
     // Row labels (left side)
     if (xOffset === 0) {
-      chartGroup.append('text')
+      labelGroup.append('text')
         .attr('x', 50)
         .attr('y', -50)
         .attr('text-anchor', 'end')
@@ -148,7 +171,7 @@ function createRadarMatrix(containerId, data, positionCategory) {
     
     // Column labels (top row)
     if (yOffset === 0) {
-      chartGroup.append('text')
+      labelGroup.append('text')
         .attr('x', 0)
         .attr('y', -margin.top + 10)
         .attr('text-anchor', 'middle')
@@ -159,7 +182,7 @@ function createRadarMatrix(containerId, data, positionCategory) {
     
     // Diagonal case (same player)
     if (isDiagonal) {
-      const chart = chartGroup.append('path')
+      radarGroup.append('path')
         .data([playerDataArray1])
         .attr('class', 'radar-chart')
         .attr('d', radarLine)
@@ -172,7 +195,7 @@ function createRadarMatrix(containerId, data, positionCategory) {
     else {
       const color1 = playerColorMap.get(playerName1);
       const color2 = playerColorMap.get(playerName2);
-      const chart1 = chartGroup.append('path')
+      radarGroup.append('path')
         .data([playerDataArray1])
         .attr('class', 'radar-chart')
         .attr('d', radarLine)
@@ -180,7 +203,7 @@ function createRadarMatrix(containerId, data, positionCategory) {
         .style('stroke', color1)
         .style('stroke-width', 2)
         .style('opacity', 0.5);
-      const chart2 = chartGroup.append('path')
+      radarGroup.append('path')
         .data([playerDataArray2])
         .attr('class', 'radar-chart')
         .attr('d', radarLine)
@@ -193,30 +216,31 @@ function createRadarMatrix(containerId, data, positionCategory) {
     // Draw axes and labels
     const axisLabels = relevantAttributes.map((attribute, i) => {
       const angle = i * angleSlice;
-      const label = chartGroup.append('text')
+      const label = radarGroup.append('text')
         .attr('x', labelOffset * Math.cos(angle - Math.PI / 2))
         .attr('y', labelOffset * Math.sin(angle - Math.PI / 2))
         .attr('text-anchor', 'middle')
         .text(attribute)
         .style('visibility', 'hidden')
         .style('font-size', '10px')
-        .style('fill', 'white');
+        .style('fill', 'white')
+        .attr('transform', `rotate(${(angle * (180 / Math.PI)) + 90}, ${labelOffset * Math.cos(angle - Math.PI / 2)}, ${labelOffset * Math.sin(angle - Math.PI / 2)})`); // Rotate text to align with axis
       return label;
     });
     
     // Hover interactions for showing axis labels
-    chartGroup.on('mouseover', () => {
+    radarGroup.on('mouseover', () => {
       axisLabels.forEach(label => label.style('visibility', 'visible'));
     });
     
-    chartGroup.on('mouseout', () => {
+    radarGroup.on('mouseout', () => {
       axisLabels.forEach(label => label.style('visibility', 'hidden'));
     });
     
-    // Draw axis lines
+    // Draw axis lines (inside the radar group so they rotate)
     relevantAttributes.forEach((attribute, i) => {
       const angle = i * angleSlice;
-      chartGroup.append('line')
+      radarGroup.append('line')
         .attr('x1', 0)
         .attr('y1', 0)
         .attr('x2', rScale(100) * Math.cos(angle - Math.PI / 2))
@@ -242,14 +266,71 @@ function createRadarMatrix(containerId, data, positionCategory) {
   });
 }
 
+// Function to create the radar legend
+function createRadarLegend(containerId, positionCategory) {
+  // Clear existing content before creating the legend
+  d3.select(containerId).selectAll('*').remove();
+
+  const width = 200; // Half the size of the original
+  const height = 200; // Half the size of the original
+  const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+
+  const svg = d3.select(containerId)
+    .append('svg')
+    .attr('width', width + margin.left + margin.right)
+    .attr('height', height + margin.top + margin.bottom)
+    .append('g')
+    .attr('transform', `translate(${margin.left + width / 2}, ${margin.top + height / 2})`); // Center the legend
+
+  const relevantAttributes = positionAttributes[positionCategory.toLowerCase()] || [];
+  const angleSlice = Math.PI * 2 / relevantAttributes.length;
+  const rScale = d3.scaleLinear()
+    .range([0, Math.min(width, height) / 2])
+    .domain([0, 100]);
+
+  const labelOffset = rScale(100)/1.2; // Adjusted for smaller size
+
+  // Draw axes and labels
+  relevantAttributes.forEach((attribute, i) => {
+    const angle = i * angleSlice;
+
+    // Draw axis line
+    svg.append('line')
+      .attr('x1', 0)
+      .attr('y1', 0)
+      .attr('x2', rScale(100) * Math.cos(angle - Math.PI / 2)/2)
+      .attr('y2', rScale(100) * Math.sin(angle - Math.PI / 2)/2)
+      .attr('stroke', '#ccc')
+      .attr('stroke-width', 2);
+
+    // Draw axis label
+    svg.append('text')
+      .attr('x', labelOffset * Math.cos(angle - Math.PI / 2))
+      .attr('y', labelOffset * Math.sin(angle - Math.PI / 2))
+      .attr('text-anchor', 'middle')
+      .text(attribute)
+      .style('font-size', '14px')
+      .style('fill', 'white')
+      .style('cursor', 'pointer') // Make the text clickable
+      .attr('transform', `rotate(${(angle * (180 / Math.PI)) + 90}, ${labelOffset * Math.cos(angle - Math.PI / 2)}, ${labelOffset * Math.sin(angle - Math.PI / 2)})`)
+      .on('click', () => sortDataByStat(attribute)); // Sort by the clicked attribute
+  });
+
+  // Apply rotation to the legend
+  svg.transition()
+    .duration(1000)
+    .attr('transform', `translate(${margin.left + width / 2}, ${margin.top + height / 2}) rotate(${rotationAngle * (180 / Math.PI)})`);
+}
+
 // Initialize DataManager and load data
 const dataManager = DataManager;
 
 // Register a listener to receive filtered data and create the radar matrix
 dataManager.registerListener((filteredData) => {
   const positionCategory = "defender";  // Example: Change this dynamically based on the position
-  const transformedData = transformToPercentages(filteredData.slice(9,14), positionCategory);  // Adjust the number of players shown
+  const transformedData = transformToPercentages(filteredData.slice(9,13), positionCategory);  // Adjust the number of players shown
   createRadarMatrix('#radar-matrix', transformedData, positionCategory);
+  createRadarLegend('#radar-legend', positionCategory); // Create the legend
 });
 
 // Load the data and apply column processing if needed
@@ -277,8 +358,9 @@ function updateRadarGraph() {
   const dataManager = DataManager;
 
   dataManager.registerListener((filteredData) => {
-    const transformedData = transformToPercentages(filteredData.slice(9,14), selectedProfile);
+    const transformedData = transformToPercentages(filteredData.slice(9,13), selectedProfile);
     createRadarMatrix('#radar-matrix', transformedData, selectedProfile);
+    createRadarLegend('#radar-legend', selectedProfile); // Update the legend
   });
 
   dataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
@@ -298,7 +380,7 @@ function sortDataByStat(stat) {
 
   dataManager.registerListener((filteredData) => {
     // Sort the data based on the selected stat
-    const sortedData = filteredData.slice(9,14).sort((a, b) => {
+    const sortedData = filteredData.slice(9,13).sort((a, b) => {
       // Convert to number for numeric sorting
       const valueA = parseFloat(a[stat]) || 0;
       const valueB = parseFloat(b[stat]) || 0;
@@ -306,7 +388,8 @@ function sortDataByStat(stat) {
     });
 
     const transformedData = transformToPercentages(sortedData, selectedProfile);
-    createRadarMatrix('#radar-matrix', transformedData, selectedProfile);
+    createRadarMatrix('#radar-matrix', transformedData, selectedProfile, stat); // Pass the sortAttribute
+    createRadarLegend('#radar-legend', selectedProfile); // Update the legend
   });
 
   dataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
@@ -326,4 +409,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Export the functions and attributes for potential use in other modules
 export { positionAttributes, updateRadarGraph, createRadarMatrix, transformToPercentages };
-

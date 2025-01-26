@@ -31,7 +31,8 @@
 
               <!-- Profile Selection Dropdown -->
               <div class="mb-3">
-                <label for="profileDropdown" class="form-label">A profile provides a selection of stats that are relevant to this player's role.</label>
+                <label for="profileDropdown" class="form-label">A profile provides a selection of stats that are
+                  relevant to this player's role.</label>
                 <select id="profileDropdown" class="form-select">
                   <option value="striker">Striker</option>
                   <option value="midfielder">Midfielder</option>
@@ -39,10 +40,21 @@
                 </select>
               </div>
 
-              <h3>Stats Shown:</h3>
-              <ul id="statsList"></ul>
+              <!--<h3>Stats Shown:</h3>-->
+              <!--<ul id="statsList"></ul>-->
+              <h2>Legend</h2>
+                <p>Click on a label to sort by that attribute and turn the corresponding axis to 12 o clock.</p>
+              <div id="radar-legend" class="chart-container"></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Legend Section -->
+      <div class="row mt-4">
+        <div class="col-12">
+          <h2>Legend</h2>
+          <div id="radar-legend" class="chart-container"></div>
         </div>
       </div>
     </div>
@@ -56,4 +68,3 @@
 </body>
 
 </html>
-
