@@ -7,31 +7,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const container = d3.select("#heatmap-container");
     let colorScales = {};
+    let displayedColumns = [];
 
-    // Initialize color scales
+    const positionColumns = {
+        all: ['Lock', 'Player', 'Age', 'Pos', 'MP','Min', 'Goals', 'abs_assists'], // Default columns
+        attacking: ['Lock', 'Player', 'Age', 'MP','Min', 'Goals', 'abs_assists', 'SoT%', 'PasAss', 'TouAttPen'], // Forwards
+        midfield: ['Lock', 'Player', 'Age',  'MP','Min', 'abs_assists', 'PasTotCmp%', 'PasProg', 'SCA', 'Carries'], // Midfielders
+        defensive: ['Lock', 'Player', 'Age', 'MP','Min', 'abs_assists', 'Tkl', 'Int', 'Clr', 'AerWon%'], // Defenders
+        keeper: ['Lock', 'Player', 'Age', 'MP', 'Min',  'abs_assists', 'AerWon%', 'Recov', 'CrdY', 'PKcon'] // Goalkeepers
+    };
+
+
+
+
     function initializeColorScales(data) {
         console.log("Initializing color scales with data:", data);
-        colorScales = {
-            MP: d3.scaleLinear().domain(getClippedDomain(data, 'MP')).range(['#e8f5e9', '#1b5e20']),
-            Goals: d3.scaleLinear().domain(getClippedDomain(data, 'Goals')).range(['#e8f5e9', '#1b5e20']),
-            SoT: d3.scaleLinear().domain(getClippedDomain(data, 'SoT')).range(['#e8f5e9', '#1b5e20']),
-            'PasTotCmp%': d3.scaleLinear().domain(getClippedDomain(data, 'PasTotCmp%')).range(['#e8f5e9', '#1b5e20']),
-            Assists: d3.scaleLinear().domain(getClippedDomain(data, 'Assists')).range(['#e8f5e9', '#1b5e20']),
-        };
+        colorScales = displayedColumns.reduce((scales, column) => {
+            if (!['Player', 'Age', 'Squad', 'Pos', 'Lock'].includes(column)) {
+                scales[column] = d3.scaleLinear()
+                    .domain(getClippedDomain(data, column))
+                    .range(['#2fff60', '#1b5e20']);
+            }
+            return scales;
+        }, {});
+        console.log("Color scales initialized:", colorScales);
     }
 
-    // Function to calculate clipped domain for color scales
+
+    // Calculate clipped domain
     function getClippedDomain(data, column, lower = 0.05, upper = 0.95) {
         const values = data.map(d => +d[column]).filter(v => !isNaN(v)).sort((a, b) => a - b);
-        if (values.length === 0) return [0, 1]; // Default domain for empty data
+        if (values.length === 0) return [0, 1];
         const lowerIndex = Math.floor(lower * values.length);
         const upperIndex = Math.ceil(upper * values.length - 1);
         return [values[lowerIndex], values[upperIndex]];
     }
 
-    // Update the heatmap
     function updateHeatmap(data) {
         console.log("Updating heatmap with data:", data);
+        console.log("Displayed columns:", displayedColumns);
+
         container.selectAll("*").remove();
 
         if (data.length === 0) {
@@ -43,52 +58,68 @@ document.addEventListener('DOMContentLoaded', () => {
         const thead = table.append("thead");
         const tbody = table.append("tbody");
 
-        const headers = ['Lock', 'Player', 'Age', 'Squad', 'Pos', 'MP', 'Goals', 'SoT', 'PasTotCmp%', 'Assists'];
-
-        // Add headers with sorting
+        // Create table headers
         thead.append("tr")
             .selectAll("th")
-            .data(headers)
+            .data(displayedColumns)
             .enter()
             .append("th")
             .text(d => d)
             .on("click", function (event, column) {
                 if (column === 'Lock') return;
-
                 console.log("Sorting column:", column);
                 currentSortColumn = column;
                 currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
                 sortAndRender(data);
             });
 
-        // Add table rows and cells
+        // Create table rows
         const rows = tbody.selectAll("tr")
             .data(data.slice(0, 10)) // Show top 10 players
             .enter()
             .append("tr");
 
         rows.selectAll("td")
-            .data(row => headers.map(column => (column === 'Lock' ? { type: 'lock', row } : row[column])))
+            .data(row => displayedColumns.map(column => {
+                if (column === 'abs_assists') {
+                    // Calculate abs_assists dynamically
+                    const assists = row.Assists ? +row.Assists : 0;
+                    const minutes = row.Min ? +row.Min : 0;
+                    return { value: Math.round((assists * minutes) / 90), row }; // Return calculated value with row context
+                }
+                return { value: row[column], row }; // For other columns, return value with row context
+            }))
             .enter()
             .append("td")
             .each(function (d, i) {
-                const column = headers[i];
-                if (d && d.type === 'lock') {
+                const column = displayedColumns[i];
+                if (column === 'Lock') {
+                    // Handle the lock functionality
+                    const isLocked = lockedPlayers.some(p => p.Player === d.row.Player);
                     d3.select(this)
+                        .style("background-color", isLocked ? "#ffc107" : "transparent")
                         .append("button")
-                        .text(lockedPlayers.some(p => p.Player === d.row.Player) ? "Unlock" : "Lock")
+                        .text(isLocked ? "Unlock" : "Lock")
                         .attr("class", "btn btn-sm btn-secondary")
                         .on("click", () => {
                             console.log("Toggling lock for player:", d.row.Player);
                             toggleLockPlayer(d.row);
                             sortAndRender(DataManager.getFilteredData());
                         });
-                } else {
+                } else if (column === 'Player') {
+                    // Handle player modal
                     d3.select(this)
-                        .text(d)
+                        .append("span")
+                        .text(d.value)
+                        .attr("class", "player-name clickable")
+                        .on("click", () => showPlayerModal(d.row.Player));
+                } else {
+                    // Handle other columns
+                    d3.select(this)
+                        .text(d.value)
                         .style("background-color", () => {
-                            if (colorScales[column] && !isNaN(d)) {
-                                return colorScales[column](+d);
+                            if (colorScales[column] && !isNaN(d.value)) {
+                                return colorScales[column](+d.value);
                             }
                             return "transparent";
                         });
@@ -96,27 +127,58 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    // Toggle lock/unlock for a player
+
+
+    // Show player modal
+    function showPlayerModal(playerName) {
+        console.log("Showing modal for player:", playerName);
+
+        const modalElement = document.getElementById("playerModal");
+        if (!modalElement) {
+            console.error("Modal element not found!");
+            return;
+        }
+
+        d3.select("#player-info").text(`Selected Player: ${playerName}`);
+
+        d3.select("#scatterplot-link").attr("href", `scatterplot.html?player=${encodeURIComponent(playerName)}`);
+        d3.select("#other-visual-link").attr("href", `other-visual.html?player=${encodeURIComponent(playerName)}`);
+
+        const lockedPlayersList = d3.select("#locked-players-list");
+        if (!lockedPlayersList.empty()) {
+            lockedPlayersList.html(""); // Clear previous list
+            if (lockedPlayers.length > 0) {
+                lockedPlayers.forEach(player => {
+                    lockedPlayersList.append("li")
+                        .attr("class", "list-group-item list-group-item-secondary")
+                        .text(player.Player);
+                });
+            } else {
+                lockedPlayersList.append("li")
+                    .attr("class", "list-group-item list-group-item-dark")
+                    .text("No locked players.");
+            }
+        }
+
+        try {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } catch (error) {
+            console.error("Error showing modal:", error);
+        }
+    }
+
     function toggleLockPlayer(player) {
         const isLocked = lockedPlayers.some(p => p.Player === player.Player);
         if (isLocked) {
-            console.log("Unlocking player:", player.Player);
             lockedPlayers = lockedPlayers.filter(p => p.Player !== player.Player);
         } else {
-            console.log("Locking player:", player.Player);
             lockedPlayers.push(player);
         }
-        console.log("Current locked players:", lockedPlayers);
-
-        // Reapply filters and render
         sortAndRender(DataManager.getFilteredData());
     }
 
-    // Sort and render data
     function sortAndRender(data) {
-        console.log("Sorting data. Locked players:", lockedPlayers);
-
-        // Combine locked players with filtered data
         const uniqueLockedPlayers = lockedPlayers.filter(player =>
             !data.some(filteredPlayer => filteredPlayer.Player === player.Player)
         );
@@ -124,44 +186,44 @@ document.addEventListener('DOMContentLoaded', () => {
             !lockedPlayers.some(locked => locked.Player === player.Player)
         );
 
-        // Sort unlocked players
         if (currentSortColumn) {
             unlockedPlayers.sort((a, b) => {
-                if (currentSortOrder === 'asc') {
-                    return +a[currentSortColumn] - +b[currentSortColumn];
+                let valueA, valueB;
+
+                if (currentSortColumn === 'abs_assists') {
+                    // Calculate abs_assists for sorting
+                    const assistsA = a.Assists ? +a.Assists : 0;
+                    const minutesA = a.Min ? +a.Min : 0;
+                    valueA = Math.round((assistsA * minutesA) / 90);
+
+                    const assistsB = b.Assists ? +b.Assists : 0;
+                    const minutesB = b.Min ? +b.Min : 0;
+                    valueB = Math.round((assistsB * minutesB) / 90);
                 } else {
-                    return +b[currentSortColumn] - +a[currentSortColumn];
+                    // Handle other columns normally
+                    valueA = +a[currentSortColumn];
+                    valueB = +b[currentSortColumn];
+                }
+
+                if (currentSortOrder === 'asc') {
+                    return valueA - valueB;
+                } else {
+                    return valueB - valueA;
                 }
             });
         }
 
-        // Combine locked players at the top
         const combinedData = [...lockedPlayers, ...unlockedPlayers];
-        console.log("Combined data after sorting:", combinedData);
         updateHeatmap(combinedData);
     }
 
-    // Register the heatmap with the filtered data
-    DataManager.registerListener(data => {
-        console.log("Data received from DataManager:", data);
-        const combinedData = [
-            ...lockedPlayers.filter(player =>
-                !data.some(filteredPlayer => filteredPlayer.Player === player.Player)
-            ),
-            ...data
-        ];
-        initializeColorScales(data);
-        sortAndRender(combinedData);
-    });
 
-    // Add event listeners for filters
+
     d3.select("#min-age").on("input", function () {
-        console.log("Min age filter input:", this.value);
         DataManager.updateFilters({ ageRange: { min: +this.value || 0 } });
     });
 
     d3.select("#max-age").on("input", function () {
-        console.log("Max age filter input:", this.value);
         DataManager.updateFilters({ ageRange: { max: +this.value || Infinity } });
     });
 
@@ -169,30 +231,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedLeagues = Array.from(
             d3.selectAll("#league-filter input[type=checkbox]:checked").nodes()
         ).map(input => input.value);
-        console.log("Selected leagues:", selectedLeagues);
         DataManager.updateFilters({ leagues: selectedLeagues });
     });
 
     d3.select("#player-search").on("input", function () {
-        console.log("Search input:", this.value);
         DataManager.updateFilters({ searchTerm: this.value });
     });
 
-    // Add position filter event listener
     d3.selectAll("#position-filter button").on("click", function () {
         const position = d3.select(this).attr("data-position");
-        console.log("Position filter selected:", position);
+        displayedColumns = positionColumns[position] || positionColumns.all;
+        console.log("Updated displayed columns:", displayedColumns);
         DataManager.updateFilters({ positionCategory: position });
     });
 
-    // Load the data
-    DataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
-        Age: value => +value,
-        MP: value => +value,
-        Goals: value => +value,
-        SoT: value => +value,
-        'PasTotCmp%': value => +value,
-        Assists: value => +value
+    DataManager.registerListener(data => {
+        initializeColorScales(data);
+        sortAndRender(data);
     });
 
+    DataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
+        Min: value => +value, // Parse minutes as a number
+        Assists: value => +value, // Parse assists as a number
+        abs_assists: row => {
+            const assists = row.Assists ? +row.Assists : 0;
+            const minutes = row.Min ? +row.Min : 0;
+            return Math.round((assists * minutes) / 90); // Calculate and round to nearest integer
+        },
+        // Add other fields as needed
+    });
+
+    displayedColumns = positionColumns.all;
 });

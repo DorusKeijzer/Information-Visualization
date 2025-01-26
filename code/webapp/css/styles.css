@@ -130,17 +130,24 @@ table {
   color: white;
 }
 
+/* Hover effect for rows */
+table tbody tr:hover {
+  outline: 2px solid white;
+  cursor: pointer;
+}
+
+
 th, td {
   padding: 10px;
   text-align: center;
   border: 1px solid #444;
 }
 
-th {
-  background-color: rgba(46, 166, 95, 0.49);
-  color: white;
-  cursor: pointer;
-}
+/*th {*/
+/*  background-color: rgba(46, 166, 95, 0.49);*/
+/*  color: white;*/
+/*  cursor: pointer;*/
+/*}*/
 
 td {
   background-color: rgba(179, 16, 16, 0.72);
@@ -159,3 +166,21 @@ th.sorted.desc::after {
   padding: 2px 8px;
   font-size: 0.85rem;
 }
+
+.locked-row {
+  background-color: rgba(255, 165, 0, 0.7) !important;
+}
+
+.modal-content {
+  border-radius: 10px;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+}
+
+.modal-body {
+  font-size: 1rem;
+}
+
+
