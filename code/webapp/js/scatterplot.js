@@ -33,11 +33,13 @@ document.addEventListener("DOMContentLoaded", () => {
     .style("opacity", 0); // Start hidden
 
   const positionMapping = {
-      attacking: ["FW", "F"], // Forwards/attacking
-      midfield: ["MF"],       // Midfielders
-      defensive: ["DF"],      // Defenders
-      keeper: ["GK"],         // Goalkeepers
+    attacking: ["FW", "F"],
+    midfield: ["MF"],
+    defensive: ["DF"],
+    keeper: ["GK"],
   };
+
+  const playerList = d3.select("#player-list"); // Reference to the player list container
 
   // Load data
   d3.json("data/2022-2023_Football_Player_Stats.json").then((data) => {
@@ -45,10 +47,11 @@ document.addEventListener("DOMContentLoaded", () => {
       name: d.Player,
       attributes: d,
       isHighlighted: false, // Track whether the point is highlighted
+      isSearchHighlighted: false, // Track whether the point matches the search
     }));
 
-    let selectedX = "PasTotCmp"; // Default X-axis
-    let selectedY = "PasTotAtt"; // Default Y-axis
+    let selectedX = "PasTotCmp";
+    let selectedY = "PasTotAtt";
 
     const filters = {
       minAge: null,
@@ -93,7 +96,13 @@ document.addEventListener("DOMContentLoaded", () => {
         .attr("cx", (d) => x(+d.attributes[selectedX]))
         .attr("cy", (d) => y(+d.attributes[selectedY]))
         .attr("r", 5)
-        .attr("fill", (d) => (d.isHighlighted ? "blue" : "#ff6347")) // Blue for highlighted points
+        .attr("fill", (d) =>
+          d.isHighlighted
+            ? "blue"
+            : d.isSearchHighlighted
+            ? "green"
+            : "#ff6347"
+        ) // Blue for selected, green for search matches, default orange
         .attr("stroke", "white")
         .attr("stroke-width", 1.5)
         .on("mouseover", (event, d) => {
@@ -105,32 +114,68 @@ document.addEventListener("DOMContentLoaded", () => {
             .style("left", `${event.pageX + 10}px`)
             .style("top", `${event.pageY - 20}px`);
         })
-        .on("mouseout", () => tooltip.style("opacity", 0));
+        .on("mouseout", () => tooltip.style("opacity", 0))
+        .on("click", function (event, d) {
+          // Toggle the isHighlighted property for the clicked player
+          d.isHighlighted = !d.isHighlighted;
+
+          // Update the color of the clicked circle
+          d3.select(this).attr("fill", d.isHighlighted ? "blue" : "#ff6347");
+
+          // Update the selected players list
+          const highlightedPlayers = transformedData.filter((p) => p.isHighlighted);
+          updateSelectedPlayersList(highlightedPlayers);
+        });
+
+      // Bring search-highlighted points to the top
+      svg.selectAll("circle")
+        .filter((d) => d.isSearchHighlighted)
+        .raise(); // Ensure search-highlighted points are on top
 
       // Bring highlighted points to the front
       svg.selectAll("circle")
         .filter((d) => d.isHighlighted)
-        .raise(); // Bring highlighted points to the top
+        .raise(); // Ensure selected points are on top
     }
 
     function highlightSearchMatches(searchValue) {
       transformedData.forEach((d) => {
-        d.isHighlighted = searchValue
+        d.isSearchHighlighted = searchValue
           ? d.name.toLowerCase().includes(searchValue.toLowerCase())
           : false;
       });
 
-      // Re-render only the circle colors and raise highlighted points
-      svg.selectAll("circle")
-        .transition()
-        .duration(200)
-        .attr("fill", (d) => (d.isHighlighted ? "blue" : "#ff6347"))
-        .end()
-        .then(() => {
-          svg.selectAll("circle")
-            .filter((d) => d.isHighlighted)
-            .raise(); // Ensure highlighted points are on top
+      // Re-render the scatterplot to update search highlights
+      updatePlot(transformedData);
+    }
+
+    function updateSelectedPlayersList(players) {
+      playerList.html(""); // Clear the list
+      if (players.length === 0) {
+        playerList.append("li").text("No players found.");
+      } else {
+        players.forEach((player) => {
+          const listItem = playerList
+            .append("li")
+            .style("display", "block") // Ensure each player is on a new line
+            .text(player.name);
+
+          // Add a minus button
+          listItem
+            .append("span")
+            .text("  -")
+            .style("color", "red")
+            .style("cursor", "pointer")
+            .on("click", () => {
+              // Remove the player from the highlighted list
+              player.isHighlighted = false;
+              updatePlot(transformedData);
+              updateSelectedPlayersList(
+                transformedData.filter((p) => p.isHighlighted)
+              );
+            });
         });
+      }
     }
 
     // Event listeners for filters
@@ -156,7 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     d3.select("#player-search").on("input", function () {
       const searchValue = this.value.trim();
-      highlightSearchMatches(searchValue); // Highlight matching players
+      highlightSearchMatches(searchValue);
     });
 
     d3.selectAll("#position-filter button").on("click", function () {
@@ -170,6 +215,26 @@ document.addEventListener("DOMContentLoaded", () => {
       ).map((input) => input.value);
       filters.leagues = selectedLeagues;
       updatePlot(transformedData);
+    });
+
+    d3.select("#radargraph-btn").on("click", () => {
+      const highlightedPlayers = transformedData.filter((d) => d.isHighlighted);
+      if (highlightedPlayers.length === 0) {
+        alert("No players selected!");
+      } else {
+        const playerNames = highlightedPlayers.map((p) => p.name).join(", ");
+        alert(`Opening radar graph for: ${playerNames}`);
+      }
+    });
+
+    d3.select("#heatmap-btn").on("click", () => {
+      const highlightedPlayers = transformedData.filter((d) => d.isHighlighted);
+      if (highlightedPlayers.length === 0) {
+        alert("No players selected!");
+      } else {
+        const playerNames = highlightedPlayers.map((p) => p.name).join(", ");
+        alert(`Opening heatmap for: ${playerNames}`);
+      }
     });
 
     updatePlot(transformedData);

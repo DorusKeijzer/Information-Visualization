@@ -117,8 +117,21 @@
       </div>
     </div>
 
-    <!-- Scatterplot Container -->
-    <div id="scatterplot-container" class="chart-container"></div>
+    <!-- Scatterplot Container and Selected Players List -->
+    <div class="d-flex">
+      <div id="scatterplot-container" class="chart-container"></div>
+    
+      <div id="selected-players-list" class="ms-4 p-3 border rounded shadow-sm" 
+            style="width: 300px; height: 500px; overflow-y: auto;">
+        <h5 class="text-center">Selected Players</h5>
+        <ul id="player-list" class="unstyled"></ul>
+      </div>
+    </div>
+    <div class="d-flex flex-column mt-4">
+      <!-- Buttons under the scatterplot -->
+      <button id="radargraph-btn" class="btn btn-primary mb-2">Open Radargraph with Selected Players</button>
+      <button id="heatmap-btn" class="btn btn-secondary">Open Heatmap with Selected Players</button>
+    </div>
   </div>
 </div>
 
