@@ -1,168 +1,243 @@
-// Set up chart dimensions
-const width = 700;
-const height = 500;
-const margin = { top: 20, right: 30, bottom: 50, left: 70 };
+document.addEventListener("DOMContentLoaded", () => {
+  const width = 700;
+  const height = 500;
+  const margin = { top: 20, right: 30, bottom: 50, left: 70 };
 
-// Create the SVG element
-const svg = d3.select("#chart")
-  .append("svg")
-  .attr("width", width + margin.left + margin.right)
-  .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-  .attr("transform", `translate(${margin.left}, ${margin.top})`);
+  // Create the SVG element
+  const svg = d3
+    .select("#scatterplot-container")
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-// Add a blue background to the scatterplot
-svg.append("rect")
-  .attr("width", width)
-  .attr("height", height)
-  .attr("fill", "#2c6a9b"); // Light blue background
+  // Define scales
+  const x = d3.scaleLinear().range([0, width]);
+  const y = d3.scaleLinear().range([height, 0]);
 
-// Define scales
-const x = d3.scaleLinear().range([0, width]);
-const y = d3.scaleLinear().range([height, 0]);
+  // Add axes
+  const xAxis = svg.append("g").attr("transform", `translate(0, ${height})`);
+  const yAxis = svg.append("g");
 
-// Add axes
-const xAxis = svg.append("g").attr("transform", `translate(0, ${height})`);
-const yAxis = svg.append("g");
+  // Tooltip setup
+  const tooltip = d3
+    .select("body")
+    .append("div")
+    .style("position", "absolute")
+    .style("background", "rgba(0, 0, 0, 0.7)")
+    .style("color", "white")
+    .style("padding", "5px 10px")
+    .style("border-radius", "5px")
+    .style("pointer-events", "none")
+    .style("opacity", 0); // Start hidden
 
-// Add labels
-svg.append("text")
-  .attr("x", width / 2)
-  .attr("y", height + 40)
-  .style("text-anchor", "middle")
-  .style("fill", "white")
-  .text("Completed Passes");
+  const positionMapping = {
+    attacking: ["FW", "F"],
+    midfield: ["MF"],
+    defensive: ["DF"],
+    keeper: ["GK"],
+  };
 
-svg.append("text")
-  .attr("x", -height / 2)
-  .attr("y", -margin.left + 15)
-  .attr("transform", "rotate(-90)")
-  .style("text-anchor", "middle")
-  .style("fill", "white")
-  .text("Number of Passes");
+  const playerList = d3.select("#player-list"); // Reference to the player list container
 
-// Tooltip setup
-const tooltip = d3.select("body")
-  .append("div")
-  .style("position", "absolute")
-  .style("background", "rgba(0, 0, 0, 0.7)")
-  .style("color", "white")
-  .style("padding", "5px 10px")
-  .style("border-radius", "5px")
-  .style("pointer-events", "none")
-  .style("opacity", 0); // Start hidden
+  // Load data
+  d3.json("data/2022-2023_Football_Player_Stats.json").then((data) => {
+    const transformedData = data.map((d) => ({
+      name: d.Player,
+      attributes: d,
+      isHighlighted: false, // Track whether the point is highlighted
+      isSearchHighlighted: false, // Track whether the point matches the search
+    }));
 
-// Load data from JSON
-d3.json("../webapp/data/2022-2023_Football_Player_Stats.json").then(data => {
-  // Transform data
-  const transformedData = data.map(d => ({
-    name: d.Player,
-    x: +d.PasTotCmp, // Completed Passes
-    y: +d.PasTotAtt, // Number of Passes
-    totalPassValue: +d.Rk, // Sum of PasTotCmp and PasTotAtt
-    category: d.Pos.startsWith("DF")
-      ? "defensive"
-      : d.Pos.startsWith("MF")
-      ? "midfield"
-      : "attacking",
-    age: +d.Age,
-    isHighlighted: false // Track if the player is highlighted
-  }));
+    let selectedX = "PasTotCmp";
+    let selectedY = "PasTotAtt";
 
-  // Filter top 500 players by the sum of PasTotCmp and PasTotAtt
-  const topPlayers = transformedData
-    .sort((a, b) => b.totalPassValue - a.totalPassValue)
-    .slice(0, 500);
+    const filters = {
+      minAge: null,
+      maxAge: null,
+      leagues: ["Premier League", "La Liga", "Serie A", "Ligue 1", "Bundesliga"],
+      searchTerm: "",
+      positionCategory: "all",
+    };
 
-  // Keep track of the current dataset (filtered or not)
-  let currentDataset = topPlayers;
+    function applyFilters(data) {
+      return data.filter((d) => {
+        const ageMatch =
+          (!filters.minAge || +d.attributes.Age >= filters.minAge) &&
+          (!filters.maxAge || +d.attributes.Age <= filters.maxAge);
+        const leagueMatch = filters.leagues.includes(d.attributes.Comp);
+        const positionMatch =
+          filters.positionCategory === "all" ||
+          positionMapping[filters.positionCategory]?.some((prefix) =>
+            d.attributes.Pos.startsWith(prefix)
+          );
+        return ageMatch && leagueMatch && positionMatch;
+      });
+    }
 
-  // Function to update the plot
-  function updatePlot(filteredData) {
-    // Update scales' domains
-    x.domain([0, d3.max(filteredData, d => d.x)]);
-    y.domain([0, d3.max(filteredData, d => d.y)]);
+    function updatePlot(data) {
+      const filteredData = applyFilters(data);
 
-    // Update axes
-    xAxis.call(d3.axisBottom(x));
-    yAxis.call(d3.axisLeft(y));
+      x.domain([0, d3.max(filteredData, (d) => +d.attributes[selectedX])]);
+      y.domain([0, d3.max(filteredData, (d) => +d.attributes[selectedY])]);
 
-    // Bind data for circles
-    const circles = svg.selectAll("circle").data(filteredData, d => d.name);
+      xAxis.call(d3.axisBottom(x));
+      yAxis.call(d3.axisLeft(y));
 
-    // Remove old points
-    circles.exit().remove();
+      const circles = svg.selectAll("circle").data(filteredData, (d) => d.name);
 
-    // Add and update points
-    circles
-      .enter()
-      .append("circle")
-      .merge(circles)
-      .attr("cx", d => x(d.x))
-      .attr("cy", d => y(d.y))
-      .attr("r", 5) // Smaller circle radius
-      .attr("fill", d => (d.isHighlighted ? "blue" : "red")) // Highlight matches in blue
-      .attr("stroke", "white") // White outline
-      .attr("stroke-width", 1.5) // Outline thickness
-      .attr("class", d => `player-circle ${d.category}`)
-      .on("mouseover", function (event, d) {
-        tooltip
-          .style("opacity", 1)
-          .html(`<strong>${d.name}</strong>`)
-          .style("left", `${event.pageX + 10}px`)
-          .style("top", `${event.pageY - 20}px`);
-      })
-      .on("mousemove", function (event) {
-        tooltip
-          .style("left", `${event.pageX + 10}px`)
-          .style("top", `${event.pageY - 20}px`);
-      })
-      .on("mouseout", function () {
-        tooltip.style("opacity", 0);
+      circles.exit().remove();
+
+      circles
+        .enter()
+        .append("circle")
+        .merge(circles)
+        .attr("cx", (d) => x(+d.attributes[selectedX]))
+        .attr("cy", (d) => y(+d.attributes[selectedY]))
+        .attr("r", 5)
+        .attr("fill", (d) =>
+          d.isHighlighted
+            ? "blue"
+            : d.isSearchHighlighted
+            ? "green"
+            : "#ff6347"
+        ) // Blue for selected, green for search matches, default orange
+        .attr("stroke", "white")
+        .attr("stroke-width", 1.5)
+        .on("mouseover", (event, d) => {
+          tooltip
+            .style("opacity", 1)
+            .html(
+              `<strong>${d.name}</strong><br>${selectedX}: ${+d.attributes[selectedX]}<br>${selectedY}: ${+d.attributes[selectedY]}`
+            )
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseout", () => tooltip.style("opacity", 0))
+        .on("click", function (event, d) {
+          // Toggle the isHighlighted property for the clicked player
+          d.isHighlighted = !d.isHighlighted;
+
+          // Update the color of the clicked circle
+          d3.select(this).attr("fill", d.isHighlighted ? "blue" : "#ff6347");
+
+          // Update the selected players list
+          const highlightedPlayers = transformedData.filter((p) => p.isHighlighted);
+          updateSelectedPlayersList(highlightedPlayers);
+        });
+
+      // Bring search-highlighted points to the top
+      svg.selectAll("circle")
+        .filter((d) => d.isSearchHighlighted)
+        .raise(); // Ensure search-highlighted points are on top
+
+      // Bring highlighted points to the front
+      svg.selectAll("circle")
+        .filter((d) => d.isHighlighted)
+        .raise(); // Ensure selected points are on top
+    }
+
+    function highlightSearchMatches(searchValue) {
+      transformedData.forEach((d) => {
+        d.isSearchHighlighted = searchValue
+          ? d.name.toLowerCase().includes(searchValue.toLowerCase())
+          : false;
       });
 
-    // Bring highlighted circles to the front
-    svg.selectAll("circle").filter(d => d.isHighlighted).raise();
-  }
+      // Re-render the scatterplot to update search highlights
+      updatePlot(transformedData);
+    }
 
-  // Initial plot with all data
-  updatePlot(topPlayers);
+    function updateSelectedPlayersList(players) {
+      playerList.html(""); // Clear the list
+      if (players.length === 0) {
+        playerList.append("li").text("No players found.");
+      } else {
+        players.forEach((player) => {
+          const listItem = playerList
+            .append("li")
+            .style("display", "block") // Ensure each player is on a new line
+            .text(player.name);
 
-  // Filtering logic
-  document.getElementById("show-all").addEventListener("click", () => {
-    topPlayers.forEach(d => (d.isHighlighted = false)); // Reset highlights
-    currentDataset = topPlayers;
-    updatePlot(topPlayers);
-  });
+          // Add a minus button
+          listItem
+            .append("span")
+            .text("  -")
+            .style("color", "red")
+            .style("cursor", "pointer")
+            .on("click", () => {
+              // Remove the player from the highlighted list
+              player.isHighlighted = false;
+              updatePlot(transformedData);
+              updateSelectedPlayersList(
+                transformedData.filter((p) => p.isHighlighted)
+              );
+            });
+        });
+      }
+    }
 
-  document.getElementById("attacking").addEventListener("click", () => {
-    topPlayers.forEach(d => (d.isHighlighted = false)); // Reset highlights
-    currentDataset = topPlayers.filter(d => d.category === "attacking");
-    updatePlot(currentDataset);
-  });
-
-  document.getElementById("midfield").addEventListener("click", () => {
-    topPlayers.forEach(d => (d.isHighlighted = false)); // Reset highlights
-    currentDataset = topPlayers.filter(d => d.category === "midfield");
-    updatePlot(currentDataset);
-  });
-
-  document.getElementById("defensive").addEventListener("click", () => {
-    topPlayers.forEach(d => (d.isHighlighted = false)); // Reset highlights
-    currentDataset = topPlayers.filter(d => d.category === "defensive");
-    updatePlot(currentDataset);
-  });
-
-  // Search functionality
-  d3.select("#player-search").on("input", function () {
-    const searchValue = this.value.toLowerCase();
-
-    // Highlight players matching the search or reset if search is empty
-    currentDataset.forEach(d => {
-      d.isHighlighted = searchValue ? d.name.toLowerCase().includes(searchValue) : false;
+    // Event listeners for filters
+    d3.select("#x-axis-select").on("change", function () {
+      selectedX = this.value;
+      updatePlot(transformedData);
     });
 
-    updatePlot(currentDataset);
+    d3.select("#y-axis-select").on("change", function () {
+      selectedY = this.value;
+      updatePlot(transformedData);
+    });
+
+    d3.select("#min-age").on("input", function () {
+      filters.minAge = +this.value || null;
+      updatePlot(transformedData);
+    });
+
+    d3.select("#max-age").on("input", function () {
+      filters.maxAge = +this.value || null;
+      updatePlot(transformedData);
+    });
+
+    d3.select("#player-search").on("input", function () {
+      const searchValue = this.value.trim();
+      highlightSearchMatches(searchValue);
+    });
+
+    d3.selectAll("#position-filter button").on("click", function () {
+      filters.positionCategory = d3.select(this).attr("data-position");
+      updatePlot(transformedData);
+    });
+
+    d3.selectAll("#league-filter input[type=checkbox]").on("change", function () {
+      const selectedLeagues = Array.from(
+        d3.selectAll("#league-filter input[type=checkbox]:checked").nodes()
+      ).map((input) => input.value);
+      filters.leagues = selectedLeagues;
+      updatePlot(transformedData);
+    });
+
+    d3.select("#radargraph-btn").on("click", () => {
+      const highlightedPlayers = transformedData.filter((d) => d.isHighlighted);
+      if (highlightedPlayers.length === 0) {
+        alert("No players selected!");
+      } else {
+        const playerNames = highlightedPlayers.map((p) => p.name).join(", ");
+        alert(`Opening radar graph for: ${playerNames}`);
+      }
+    });
+
+    d3.select("#heatmap-btn").on("click", () => {
+      const highlightedPlayers = transformedData.filter((d) => d.isHighlighted);
+      if (highlightedPlayers.length === 0) {
+        alert("No players selected!");
+      } else {
+        const playerNames = highlightedPlayers.map((p) => p.name).join(", ");
+        alert(`Opening heatmap for: ${playerNames}`);
+      }
+    });
+
+    updatePlot(transformedData);
   });
 }).catch(error => {
   console.error("Error loading JSON:", error);

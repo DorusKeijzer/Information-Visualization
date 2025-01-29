@@ -9,34 +9,132 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <div class="container-fluid bg-blue text-white vh-100">
-    <div class="container mt-4">
-      <button class="btn btn-secondary mb-3" onclick="window.location.href='index.html'">Back</button>
-      
-      <!-- Chart Container -->
-      <div id="chart" class="chart-container"></div>
-      
-      <!-- Filter Buttons -->
-      <div class="mt-4 text-center">
-        <button id="show-all" class="btn btn-secondary mx-2">Show All</button>
-        <button id="attacking" class="btn btn-danger mx-2">Attacking</button>
-        <button id="midfield" class="btn btn-primary mx-2">Midfield</button>
-        <button id="defensive" class="btn btn-success mx-2">Defensive</button>
+<div class="container-fluid bg-blue text-white vh-100">
+  <div class="container mt-4">
+    <button class="btn btn-secondary mb-3" onclick="window.location.href='index.html'">Back</button>
+
+    <!-- Filters Section -->
+    <div id="filters" class="d-flex align-items-center justify-content-around flex-wrap bg-dark p-3 rounded">
+      <!-- Min Age Input -->
+      <div class="filter-item">
+        <label for="min-age" class="form-label text-white">Min Age:</label>
+        <input type="number" id="min-age" placeholder="Enter min age" class="form-control">
       </div>
-      
-      <!-- Search Bar -->
-      <div class="mt-4 text-center">
+
+      <!-- Max Age Input -->
+      <div class="filter-item ms-3">
+        <label for="max-age" class="form-label text-white">Max Age:</label>
+        <input type="number" id="max-age" placeholder="Enter max age" class="form-control">
+      </div>
+
+      <!-- League Filters -->
+      <div class="filter-item ms-3">
+        <label class="form-label text-white">Select Leagues:</label>
+        <div id="league-filter" class="d-flex flex-wrap">
+          <div class="form-check me-2">
+            <input type="checkbox" id="premier-league" value="Premier League" class="form-check-input" checked>
+            <label for="premier-league" class="form-check-label text-white">Premier League</label>
+          </div>
+          <div class="form-check me-2">
+            <input type="checkbox" id="ligue-1" value="Ligue 1" class="form-check-input" checked>
+            <label for="ligue-1" class="form-check-label text-white">Ligue 1</label>
+          </div>
+          <div class="form-check me-2">
+            <input type="checkbox" id="bundesliga" value="Bundesliga" class="form-check-input" checked>
+            <label for="bundesliga" class="form-check-label text-white">Bundesliga</label>
+          </div>
+          <div class="form-check me-2">
+            <input type="checkbox" id="serie-a" value="Serie A" class="form-check-input" checked>
+            <label for="serie-a" class="form-check-label text-white">Serie A</label>
+          </div>
+          <div class="form-check">
+            <input type="checkbox" id="la-liga" value="La Liga" class="form-check-input" checked>
+            <label for="la-liga" class="form-check-label text-white">La Liga</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Position Filters -->
+      <div class="filter-item ms-3">
+        <label class="form-label text-white">Select Position:</label>
+        <div id="position-filter" class="d-flex flex-wrap">
+          <button class="btn btn-secondary me-2" data-position="all">All</button>
+          <button class="btn btn-secondary me-2" data-position="attacking">Attacking</button>
+          <button class="btn btn-secondary me-2" data-position="midfield">Midfield</button>
+          <button class="btn btn-secondary me-2" data-position="defensive">Defensive</button>
+          <!--button class="btn btn-secondary" data-position="keeper">Keeper</button-->
+        </div>
+      </div>
+
+      <!-- X-Axis Selector -->
+      <div class="filter-item ms-3">
+        <label for="x-axis-select" class="form-label text-white">X-Axis:</label>
+        <select id="x-axis-select" class="form-select">
+          <option value="PasTotCmp">Completed Passes</option>
+          <option value="PasTotAtt">Attempted Passes</option>
+          <option value="PasTotCmp%">Pass Completion %</option>
+          <option value="PasTotPrgDist">Progressive Passing Distance</option>
+          <option value="Goals">Goals</option>
+          <option value="Shots">Shots</option>
+          <option value="SoT%">Shots on Target %</option>
+          <option value="Tkl">Tackles</option>
+          <option value="Blocks">Blocks</option>
+          <option value="Int">Interceptions</option>
+          <option value="Touches">Touches</option>
+          <option value="CarTotDist">Carrying Distance</option>
+        </select>
+      </div>
+
+      <!-- Y-Axis Selector -->
+      <div class="filter-item ms-3">
+        <label for="y-axis-select" class="form-label text-white">Y-Axis:</label>
+        <select id="y-axis-select" class="form-select">
+          <option value="PasTotCmp">Completed Passes</option>
+          <option value="PasTotAtt">Attempted Passes</option>
+          <option value="PasTotCmp%">Pass Completion %</option>
+          <option value="PasTotPrgDist">Progressive Passing Distance</option>
+          <option value="Goals">Goals</option>
+          <option value="Shots">Shots</option>
+          <option value="SoT%">Shots on Target %</option>
+          <option value="Tkl">Tackles</option>
+          <option value="Blocks">Blocks</option>
+          <option value="Int">Interceptions</option>
+          <option value="Touches">Touches</option>
+          <option value="CarTotDist">Carrying Distance</option>
+        </select>
+      </div>
+
+      <!-- Player Search -->
+      <div class="mb-3">
+        <label for="player-search" class="form-label text-white">Search Player:</label>
         <input
-          id="player-search"
           type="text"
-          class="form-control d-inline-block"
-          placeholder="Search for a player..."
-          style="width: 300px; text-align: center;"
+          id="player-search"
+          class="form-control"
+          placeholder="Type player name..."
+          style="width: 300px;"
         />
       </div>
     </div>
-  </div>
 
-  <script src="js/scatterplot.js"></script>
+    <!-- Scatterplot Container and Selected Players List -->
+    <div class="d-flex">
+      <div id="scatterplot-container" class="chart-container"></div>
+    
+      <div id="selected-players-list" class="ms-4 p-3 border rounded shadow-sm" 
+            style="width: 300px; height: 500px; overflow-y: auto;">
+        <h5 class="text-center">Selected Players</h5>
+        <ul id="player-list" class="unstyled"></ul>
+      </div>
+    </div>
+    <div class="d-flex flex-column mt-4">
+      <!-- Buttons under the scatterplot -->
+      <button id="radargraph-btn" class="btn btn-primary mb-2">Open Radargraph with Selected Players</button>
+      <button id="heatmap-btn" class="btn btn-secondary">Open Heatmap with Selected Players</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/scatterplot.js"></script>
 </body>
 </html>
