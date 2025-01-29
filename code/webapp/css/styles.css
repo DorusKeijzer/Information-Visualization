@@ -17,6 +17,15 @@ body {
     border-radius: 15px;
     overflow: hidden;
   }
+
+  .rounded {
+
+    background-color: #2c6a9b;
+    border-radius: 2px;
+    padding: 2px;
+    padding-left: 5px;
+    
+  }
   
   .center-circle {
     position: absolute;
@@ -183,4 +192,20 @@ th.sorted.desc::after {
   font-size: 1rem;
 }
 
+
+.stat-item {
+  cursor: pointer;
+  padding: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.stat-item:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.stat-item.active-stat {
+  font-weight: bold;
+  color: #ffd700; /* Golden highlight */
+  background-color: rgba(255, 215, 0, 0.1);
+}
 
