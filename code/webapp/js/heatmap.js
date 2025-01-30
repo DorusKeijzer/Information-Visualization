@@ -17,11 +17,47 @@ document.addEventListener('DOMContentLoaded', () => {
         keeper: ['Lock', 'Player', 'Age', 'MP', 'Min',  'abs_assists', 'AerWon%', 'Recov', 'CrdY', 'PKcon'] // Goalkeepers
     };
 
+    function sendToVisualization(targetUrl) {
+        if (lockedPlayers.length === 0) {
+            console.warn("⚠ No players are locked! Nothing to send.");
+            return;
+        }
+
+        console.log("✅ Sending the following locked players to visualization:", lockedPlayers);
+
+        // Store selected players in DataManager
+        DataManager.sendSelectedPlayers(lockedPlayers);
+
+        // Verify players are correctly stored in localStorage
+        const storedPlayers = DataManager.getStoredSelectedPlayers();
+        console.log("📝 Players saved and retrieved from DataManager:", storedPlayers);
+
+        // Redirect to the target visualization
+        if (targetUrl) {
+            // window.location.href = targetUrl;
+        } else {
+            console.warn("⚠ Target URL is not provided. No redirection will occur.");
+        }
+    }
 
 
+
+    // const scatterplotLink = document.getElementById("scatterplot-link");
+    // if (scatterplotLink) {
+    //     scatterplotLink.addEventListener("click", sendToScatterplot);
+    // } else {
+    //     console.warn("Scatterplot link not found.");
+    // }
+
+    // function receiveSelectedPlayers(players) {
+    //     lockedPlayers = [...players];  // Lock received players
+    //     sortAndRender(DataManager.getFilteredData());
+    // }
+    //
+    // DataManager.registerSelectionListener(receiveSelectedPlayers);
 
     function initializeColorScales(data) {
-        console.log("Initializing color scales with data:", data);
+        // console.log("Initializing color scales with data:", data);
         colorScales = displayedColumns.reduce((scales, column) => {
             if (!['Player', 'Age', 'Squad', 'Pos', 'Lock'].includes(column)) {
                 let values;
@@ -51,18 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-
-    // Calculate clipped domain
-    // function getClippedDomain(data, column, lower = 0.05, upper = 0.95) {
-    //     const values = data.map(d => +d[column]).filter(v => !isNaN(v)).sort((a, b) => a - b);
-    //     if (values.length === 0) return [0, 1];
-    //     const lowerIndex = Math.floor(lower * values.length);
-    //     const upperIndex = Math.ceil(upper * values.length - 1);
-    //     return [values[lowerIndex], values[upperIndex]];
-    // }
-
     function updateHeatmap(data) {
-        console.log("Updating heatmap with data:", data);
+        // console.log("Updating heatmap with data:", data);
         console.log("Displayed columns:", displayedColumns);
 
         container.selectAll("*").remove();
@@ -147,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // Show player modal with locked players and clicked player
     function showPlayerModal(playerName) {
         console.log("Showing modal for player:", playerName);
 
@@ -184,9 +209,19 @@ document.addEventListener('DOMContentLoaded', () => {
             playerCard.append("p").html(`<strong>Age:</strong> ${player.Age || 'N/A'}`);
         });
 
-        // Set scatterplot and other visual links
-        d3.select("#scatterplot-link").attr("href", `scatterplot.html?player=${encodeURIComponent(playerName)}`);
-        d3.select("#other-visual-link").attr("href", `other-visual.html?player=${encodeURIComponent(playerName)}`);
+        d3.select("#scatterplot-link")
+            .attr("href", "#") // Prevent immediate navigation
+            .on("click", function (event) {
+                event.preventDefault(); // Prevent default behavior
+                sendToVisualization("scatterplot.html"); // ✅ Now it correctly calls the function!
+            });
+
+        d3.select("#other-visual-link")
+            .attr("href", "#")
+            .on("click", function (event) {
+                event.preventDefault();
+                console.log("Other visual link clicked");
+            });
 
         try {
             const modal = new bootstrap.Modal(modalElement);
@@ -195,6 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Error showing modal:", error);
         }
     }
+
 
 
     function toggleLockPlayer(player) {
@@ -292,18 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeColorScales(data);
         sortAndRender(data);
     });
-
-
-    // DataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
-    //     Min: value => +value, // Parse minutes as a number
-    //     Assists: value => +value, // Parse assists as a number
-    //     abs_assists: row => {
-    //         const assists = row.Assists ? +row.Assists : 0;
-    //         const minutes = row.Min ? +row.Min : 0;
-    //         return Math.round((assists * minutes) / 90); // Calculate and round to nearest integer
-    //     },
-    //     // Add other fields as needed
-    // });
 
     displayedColumns = positionColumns.all;
     updateHeatmap(DataManager.getFilteredData());
