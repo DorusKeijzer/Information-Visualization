@@ -41,21 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-
-    // const scatterplotLink = document.getElementById("scatterplot-link");
-    // if (scatterplotLink) {
-    //     scatterplotLink.addEventListener("click", sendToScatterplot);
-    // } else {
-    //     console.warn("Scatterplot link not found.");
-    // }
-
-    // function receiveSelectedPlayers(players) {
-    //     lockedPlayers = [...players];  // Lock received players
-    //     sortAndRender(DataManager.getFilteredData());
-    // }
-    //
-    // DataManager.registerSelectionListener(receiveSelectedPlayers);
-
     function initializeColorScales(data) {
         // console.log("Initializing color scales with data:", data);
         colorScales = displayedColumns.reduce((scales, column) => {
@@ -231,8 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
-
     function toggleLockPlayer(player) {
         const isLocked = lockedPlayers.some(p => p.Player === player.Player);
         if (isLocked) {
@@ -256,7 +239,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         sortAndRender(DataManager.getFilteredData());
     }
-
 
     function sortAndRender(data) {
         // Check for stored selected players and lock them
