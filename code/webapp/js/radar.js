@@ -450,7 +450,7 @@ function sortDataByStat(stat) {
 }
 // Initial setup
 document.addEventListener('DOMContentLoaded', () => {
-  const initialProfile = 'Midfielder';
+  const initialProfile = 'midfielder';
   document.getElementById('profileDropdown').value = initialProfile;
   updateRadarGraph();
 
