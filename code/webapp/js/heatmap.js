@@ -236,14 +236,45 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleLockPlayer(player) {
         const isLocked = lockedPlayers.some(p => p.Player === player.Player);
         if (isLocked) {
+            // Remove player from lockedPlayers
             lockedPlayers = lockedPlayers.filter(p => p.Player !== player.Player);
+
+            // Update stored selected players in DataManager
+            const storedPlayers = DataManager.getStoredSelectedPlayers();
+            const updatedStoredPlayers = storedPlayers.filter(p => p.Player !== player.Player);
+            DataManager.sendSelectedPlayers(updatedStoredPlayers); // Update localStorage
+            console.log(`❌ Removed player from storage: ${player.Player}`);
         } else {
+            // Add player to lockedPlayers
             lockedPlayers.push(player);
+
+            // Update stored selected players in DataManager
+            const storedPlayers = DataManager.getStoredSelectedPlayers();
+            storedPlayers.push(player);
+            DataManager.sendSelectedPlayers(storedPlayers); // Update localStorage
+            console.log(`✅ Added player to storage: ${player.Player}`);
         }
         sortAndRender(DataManager.getFilteredData());
     }
 
+
     function sortAndRender(data) {
+        // Check for stored selected players and lock them
+        const storedPlayers = DataManager.getStoredSelectedPlayers();
+        if (storedPlayers.length > 0) {
+            console.log("✅ Locking stored players:", storedPlayers);
+            storedPlayers.forEach((storedPlayer) => {
+                // Avoid duplicates in lockedPlayers
+                if (!lockedPlayers.some((locked) => locked.Player === storedPlayer.Player)) {
+                    const playerToLock = data.find((player) => player.Player === storedPlayer.Player);
+                    if (playerToLock) {
+                        lockedPlayers.push(playerToLock);
+                    }
+                }
+            });
+        }
+
+        // Separate locked and unlocked players
         const uniqueLockedPlayers = lockedPlayers.filter(player =>
             !data.some(filteredPlayer => filteredPlayer.Player === player.Player)
         );
@@ -281,6 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const combinedData = [...lockedPlayers, ...unlockedPlayers];
         updateHeatmap(combinedData);
     }
+
 
 
 

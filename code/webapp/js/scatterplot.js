@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+ document.addEventListener("DOMContentLoaded", () => {
   const width = 700;
   const height = 500;
   const margin = { top: 20, right: 30, bottom: 50, left: 70 };
