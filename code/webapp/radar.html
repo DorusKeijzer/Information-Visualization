@@ -14,15 +14,28 @@
   <div class="container-fluid bg-blue text-white vh-100">
     <div class="container mt-4">
       <button class="btn btn-secondary mb-3" onclick="window.location.href='index.html'">Back</button>
-
       <div class="row">
         <h1>Radar Matrix</h1>
+        <!-- Column for the sorting direction arrow -->
+        <div class="col-auto d-flex flex-column align-items-center justify-content-start">
+            <div class="sorting-direction text-white text-center">Sorting<br> Direction</div>
+          <div id="arrow-container"></div>
+        </div>
+
+        <!--<div class="col-md-1 d-flex flex-column align-items-center justify-content-center">-->
+        <!--  <div class="sorting-direction">-->
+        <!--    <div class="sorting-direction">Sorting Direction</div>-->
+        <!--    <div id="arrow-container"></div>-->
+        <!--  </div>-->
+        <!--</div>-->
         <!-- Column for the graph -->
-        <div class="col-md-8">
+        <div class="col-md-7">
           <div id="radar-matrix" class="chart-container"></div>
         </div>
 
-        <!-- Column for the profile selection -->
+
+
+        <!-- Column for profile selection -->
         <div class="col-md-4">
           <div class="mt-4">
             <h2>Axes Selection</h2>
@@ -40,12 +53,10 @@
                 </select>
               </div>
 
-              <!--<h3>Stats Shown:</h3>-->
-              <!--<ul id="statsList"></ul>-->
               <h2>Legend</h2>
-              <p>Click on a label to sort by that attribute and turn the corresponding axis to 12 o clock.</p>
+              <p>Click on a label to sort by that attribute and turn the corresponding axis to 12 o’clock.</p>
               <div id="radar-legend" class="chart-container"></div>
-                <div id="explanations"></div>
+              <div id="explanations"></div>
             </div>
           </div>
         </div>

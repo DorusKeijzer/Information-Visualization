@@ -32,6 +32,43 @@ const positionAttributes = {
 // Create a color map to store player colors
 const playerColorMap = new Map();
 
+
+function drawArrow() {
+  const width = 10;   // Width of the SVG container
+  const height = 400; // Total height of the arrow
+  const lineHeight = 380;
+  const arrowSize = 5; // Size of the arrowhead
+
+  // Select the container and append the SVG
+  const svg = d3.select("#arrow-container")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  // Draw the vertical line
+  svg.append("line")
+    .attr("x1", width / 2)
+    .attr("y1", 0)
+    .attr("x2", width / 2)
+    .attr("y2", lineHeight)
+    .attr("stroke", "white")
+    .attr("stroke-width", 4)
+    .attr("stroke-linecap", "round");
+
+  // Draw the arrowhead (triangle)
+  svg.append("polygon")
+    .attr("points", `
+      ${width / 2 - arrowSize},${lineHeight} 
+      ${width / 2 + arrowSize},${lineHeight} 
+      ${width / 2},${height}
+    `)
+    .attr("fill", "white");
+}
+
+// Call the function when the page loads
+
+
+
 // Existing transformToPercentages function remains the same
 function transformToPercentages(data, positionCategory) {
   const maxValues = {};
@@ -454,6 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('profileDropdown').value = initialProfile;
   updateRadarGraph();
 
+drawArrow();
   // Add event listener for dropdown changes
   document.getElementById('profileDropdown').addEventListener('change', updateRadarGraph);
 });

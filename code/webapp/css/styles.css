@@ -344,4 +344,6 @@ th, td {
   justify-content: space-between;
   align-items: center;
 }
-
+.sorting-direction{
+  font-size: 10px;
+}
