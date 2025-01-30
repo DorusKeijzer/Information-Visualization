@@ -14,8 +14,31 @@ document.addEventListener('DOMContentLoaded', () => {
         attacking: ['Lock', 'Player', 'Age', 'MP','Min', 'Goals', 'abs_assists', 'SoT%', 'PasAss', 'TouAttPen'], // Forwards
         midfield: ['Lock', 'Player', 'Age',  'MP','Min', 'abs_assists', 'PasTotCmp%', 'PasProg', 'SCA', 'Carries'], // Midfielders
         defensive: ['Lock', 'Player', 'Age', 'MP','Min', 'abs_assists', 'Tkl', 'Int', 'Clr', 'AerWon%'], // Defenders
-        keeper: ['Lock', 'Player', 'Age', 'MP', 'Min',  'abs_assists', 'AerWon%', 'Recov', 'CrdY', 'PKcon'] // Goalkeepers
+        // keeper: ['Lock', 'Player', 'Age', 'MP', 'Min',  'abs_assists', 'AerWon%', 'Recov', 'CrdY', 'PKcon'] // Goalkeepers
     };
+
+    const columnDescriptions = {
+        'Lock': 'Lock this player to keep them selected',
+        'Player': 'Player name',
+        'Age': 'Age of the player',
+        'Pos': 'Position played by the player',
+        'MP': 'Matches Played: Total matches player has participated in',
+        'Min': 'Minutes Played: Total minutes the player has played',
+        'Goals': 'Total goals scored by the player',
+        'abs_assists': 'Total amount of assists',
+        'SoT%': 'Shots on goal Percentage',
+        'PasAss': 'Pass Assists: Total number of assists made per 90 minutes played',
+        'TouAttPen': 'Touches in the attacking penalty area per 90 minutes played',
+        'PasTotCmp%': 'Pass Completion Percentage: Percentage of total passes completed.',
+        'PasProg': 'Progressive Passes: Number of forward passes advancing the ball per 90 minutes played',
+        'SCA': 'Shot-Creating Actions: Number of offensive actions leading to a shot per 90 minutes played',
+        'Carries': 'Total number of ball carries per 90 minutes played',
+        'Tkl': 'Tackles: Number of times player successfully tackled an opponent per 90 minutes played',
+        'Int': 'Interceptions: Number of times player intercepted the ball per 90 minutes played',
+        'Clr': 'Clearances: Number of times player cleared the ball from the defensive area per 90 minutes played',
+        'AerWon%': 'Aerial Duels Won Percentage.',
+    };
+
 
     function sendToVisualization(targetUrl) {
         if (lockedPlayers.length === 0) {
@@ -71,6 +94,13 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Color scales initialized:", colorScales);
     }
 
+    // Create tooltip div
+    const tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltipHeatmap")
+        .style("display", "none");
+
+
 
     function updateHeatmap(data) {
         // console.log("Updating heatmap with data:", data);
@@ -99,6 +129,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     return `${column} ${currentSortOrder === 'asc' ? '▲' : '▼'}`;
                 }
                 return column;
+            })
+            //  ========================== TOOLTIP HEATMAP FUNCTION ======================================
+            .on("mouseover", function (event, column) {
+                // Show tooltip with column description
+                if (columnDescriptions[column]) {
+                    tooltip.style("display", "block")
+                        .text(columnDescriptions[column]);
+                }
+            })
+            .on("mousemove", function (event) {
+                tooltip.style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY + 10) + "px");
+            })
+            .on("mouseout", function () {
+                tooltip.style("display", "none");
             })
             .on("click", function (event, column) {
                 if (column === 'Lock') return;

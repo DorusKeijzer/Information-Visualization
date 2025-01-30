@@ -177,6 +177,19 @@ th, td {
   background-color: rgba(255, 165, 0, 0.7) !important;
 }
 
+.tooltipHeatmap {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
+}
+
+
 /*-----------------------POP UP SCREEN STYLING---------------------------------------*/
 
 .modal-content {
