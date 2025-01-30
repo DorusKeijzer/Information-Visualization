@@ -341,8 +341,15 @@ dataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
   // Add any other column processors here as needed
 });
 
+
+
+// Function to update the radar graph and explanation
 function updateRadarGraph() {
   const selectedProfile = document.getElementById('profileDropdown').value;
+
+  // Update the explanation div
+  const explanationDiv = document.getElementById('explanations');
+  explanationDiv.innerHTML = generateExplanation(selectedProfile);
 
   // Update the list of stats in the UI with clickable elements
   //const statsList = document.getElementById('statsList');
@@ -371,6 +378,46 @@ function updateRadarGraph() {
     Age: value => parseInt(value),
   });
 }
+
+function generateExplanation(profile) {
+  const attributeDescriptions = {
+    striker: {
+      "Goals": "Goals scored",
+      "Shots": "Shots total",
+      "SoT": "Shots on target",
+      "G/Sh": "Goals per shot",
+      "Assists": "Assists",
+      "PKwon": "Penalty kicks won",
+    },
+    defender: {
+      "Tkl": "Tackles",
+      "TklWon": "Tackles won",
+      "Blocks": "Shots and passes blocked",
+      "Int": "Interceptions",
+      "Clr": "Clearances",
+      "AerWon": "Aerials won",
+    },
+    midfielder: {
+      "PasTotCmp": "Passes completed",
+      "PasTotAtt": "Passes attempted",
+      "SCA": "Shot-creating actions",
+      "GCA": "Goal-creating actions",
+      "CarTotDist": "Total distance moved with the ball",
+      "Fls": "Fouls committed",
+    },
+  };
+
+  const attributes = attributeDescriptions[profile] || {};
+  let explanation = "";
+
+  // Loop through the attributes and build the explanation HTML
+  for (const [attribute, description] of Object.entries(attributes)) {
+    explanation += `<strong>${attribute}:</strong> ${description}<br>`;
+  }
+
+  return explanation;
+}
+
 
 function sortDataByStat(stat) {
   const dataManager = DataManager;
@@ -401,21 +448,15 @@ function sortDataByStat(stat) {
     Age: value => parseInt(value),
   });
 }
-
 // Initial setup
 document.addEventListener('DOMContentLoaded', () => {
   const initialProfile = 'striker';
   document.getElementById('profileDropdown').value = initialProfile;
   updateRadarGraph();
 
-
-
   // Add event listener for dropdown changes
   document.getElementById('profileDropdown').addEventListener('change', updateRadarGraph);
 });
 
-
-
-console.log("AAAAAAAAAAAAAAAAAAAAAAAAA")
 // Export the functions and attributes for potential use in other modules
 export { positionAttributes, updateRadarGraph, createRadarMatrix, transformToPercentages };
