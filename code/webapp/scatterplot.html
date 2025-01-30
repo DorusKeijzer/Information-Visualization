@@ -18,7 +18,7 @@
       <div class="row g-3">
 
         <!-- Min Minutes Slider (Left Side) -->
-        <div class="col-md-3 ml-3 pe-4">  <!-- ✅ Added `mb-3` for bottom margin -->
+        <div class="col-md-3 ml-3 pe-4">
           <label for="min-minutes" class="form-label text-white">Min Minutes:</label>
           <input type="range" id="min-minutes" min="0" max="2100" step="100" value="0" class="form-range w-100">
           <span id="min-minutes-value" class="text-white text-center d-block" style="width: 50px;">0</span>  <!-- ✅ Fixed width -->
@@ -92,9 +92,17 @@
         <div class="col-md-6">
           <label for="x-axis-select" class="form-label text-white">X-Axis:</label>
           <select id="x-axis-select" class="form-select">
-            <option value="PasTotCmp">Completed Passes</option>
-            <option value="PasTotAtt">Attempted Passes</option>
-            <option value="Goals">Goals</option>
+            <option value="Goals">Total Goals</option>
+            <option value="GoalsPerGame">Goals per Game</option>
+            <option value="Shots">Shots per Game</option>
+            <option value="TotalShots">Total Shots</option>
+            <option value="Min">Minutes Played</option>
+            <option value="PasTotAtt">Attempted Passes per Game</option>
+            <option value="PasTotCmp">Completed Passes per Game</option>
+            <option value="Assists">Assists per Game</option>
+            <option value="Tkl">Tackles per Game</option>
+            <option value="Blocks">Blocks per Game</option>
+            <option value="Touches">Touches per Game</option>
           </select>
         </div>
         <div class="col-md-6">
@@ -108,9 +116,17 @@
         <div class="col-md-6">
           <label for="y-axis-select" class="form-label text-white">Y-Axis:</label>
           <select id="y-axis-select" class="form-select">
-            <option value="PasTotCmp">Completed Passes</option>
-            <option value="PasTotAtt">Attempted Passes</option>
-            <option value="Goals">Goals</option>
+            <option value="Goals">Total Goals</option>
+            <option value="GoalsPerGame">Goals per Game</option>
+            <option value="Shots">Shots per Game</option>
+            <option value="TotalShots">Total Shots</option>
+            <option value="Min">Minutes Played</option>
+            <option value="PasTotAtt">Attempted Passes per Game</option>
+            <option value="PasTotCmp">Completed Passes per Game</option>
+            <option value="Assists">Assists per Game</option>
+            <option value="Tkl">Tackles per Game</option>
+            <option value="Blocks">Blocks per Game</option>
+            <option value="Touches">Touches per Game</option>
           </select>
         </div>
         <div class="col-md-6">

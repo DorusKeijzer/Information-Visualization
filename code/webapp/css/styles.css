@@ -257,3 +257,91 @@ th, td {
   background-color: rgba(255, 215, 0, 0.1);
 }
 
+
+
+
+
+
+/* Scatterplot styling */
+
+
+/* Tooltip Styling */
+.scatter-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Scatterplot Circles */
+.scatter-circle {
+  stroke: white;
+  stroke-width: 1.5px;
+  transition: fill 0.2s ease-in-out, stroke-width 0.2s ease-in-out;
+}
+
+/* Selected Data Point */
+.scatter-circle.selected {
+  fill: #A020F0 !important;
+  stroke-width: 2px;
+}
+
+/* Highlighted Data Point */
+.scatter-circle.highlight {
+  fill: #FF4500 !important;
+  stroke-width: 2px;
+}
+
+/* Default Data Point */
+.scatter-circle.default {
+  fill: rgba(50, 205, 50, 0.8) !important;
+}
+
+/* Filters Section */
+#filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  background-color: #333;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.filter-item {
+  margin-bottom: 15px;
+}
+
+#league-filter .form-check {
+  margin-right: 10px;
+}
+
+/* Selected Players List */
+#selected-players-list {
+  background-color: #222;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0px 2px 5px rgba(255, 255, 255, 0.1);
+}
+
+#player-list {
+  list-style: none;
+  padding: 0;
+}
+
+#player-list li {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 5px 10px;
+  margin-bottom: 5px;
+  border-radius: 3px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+

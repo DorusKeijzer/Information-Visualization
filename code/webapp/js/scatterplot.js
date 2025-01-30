@@ -22,17 +22,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const tooltip = d3
         .select("body")
         .append("div")
-        .style("position", "absolute")
-        .style("background", "rgba(0, 0, 0, 0.7)")
-        .style("color", "white")
-        .style("padding", "5px 10px")
-        .style("border-radius", "5px")
-        .style("pointer-events", "none")
+        .attr("class", "scatter-tooltip")
         .style("opacity", 0);
 
     await DataManager.loadData("data/2022-2023_Football_Player_Stats.json");
 
-    // ✅ Load stored selected players from localStorage
     let highlightedPlayers = DataManager.getStoredSelectedPlayers();
     console.log("Loaded stored selected players:", highlightedPlayers);
 
@@ -54,7 +48,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
   function applyFilters(data) {
-    return data.filter((d) => {
+    return data.map(d => ({
+        ...d,
+        GoalsPerGame: (+d.Goals / (+d.Min / 90) || 0),
+        TotalShots: Math.ceil((+d.Shots * (+d.Min / 90)) || 0)
+    })).filter(d => {
         const ageMatch =
             (!filters.minAge || +d.Age >= filters.minAge) &&
             (!filters.maxAge || +d.Age <= filters.maxAge);
@@ -67,7 +65,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const xMatch = !filters.minX || +d[selectedX] >= filters.minX;
         const yMatch = !filters.minY || +d[selectedY] >= filters.minY;
 
-        const minutesMatch = !filters.minMinutes || +d.Min >= filters.minMinutes;  // ✅ ADDED FILTER
+        const minutesMatch = !filters.minMinutes || +d.Min >= filters.minMinutes;
 
         const searchMatch =
             !filters.searchTerm || d.Player.toLowerCase().includes(filters.searchTerm.toLowerCase());
@@ -132,7 +130,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   
               DataManager.sendSelectedPlayers(highlightedPlayers);
               updatePlot(data);
-              updateHighlightedPlayersList(); // ✅ Ensure the list updates when a player is selected
+              updateHighlightedPlayersList();
           });
   
       svg.selectAll("circle")
@@ -189,7 +187,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           d.isSearchHighlighted = searchValue && d.Player.toLowerCase().includes(searchValue);
       });
   
-      updatePlot(DataManager.getFilteredData()); // ✅ Only update colors, do not filter
+      updatePlot(DataManager.getFilteredData());
   });
 
     d3.select("#min-x").on("input", function () {
@@ -203,7 +201,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     d3.selectAll("#position-filter button").on("click", function () {
-        filters.positionCategory = d3.select(this).attr("data-position") || "all";  // ✅ FIXED
+        filters.positionCategory = d3.select(this).attr("data-position") || "all";
         d3.selectAll("#position-filter button").classed("selected", false);
         d3.select(this).classed("selected", true);
         updatePlot(DataManager.getFilteredData());
@@ -211,9 +209,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     d3.select("#min-minutes").on("input", function () {
         const minMinutes = +this.value;
-        d3.select("#min-minutes-value").text(minMinutes); // ✅ Update displayed value
-        filters.minMinutes = minMinutes; // ✅ Store in filters
-        updatePlot(DataManager.getFilteredData()); // ✅ Apply filter
+        d3.select("#min-minutes-value").text(minMinutes);
+        filters.minMinutes = minMinutes;
+        updatePlot(DataManager.getFilteredData());
     });
 
     d3.selectAll("#league-filter input[type=checkbox]").on("change", function () {
@@ -241,10 +239,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else {
             d3.select("#radar-link")
                 .attr("href", "#")
-                .on("click", event => {
-                    alert("The maximum number of players for other views is 7.");
-                    event.preventDefault();
-                })
                 .style("pointer-events", "none")
                 .style("opacity", "0.5");
         }
@@ -261,7 +255,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         updatePlot(data);
     });
 
-    // ✅ Update the selected players list upon reload
     updateHighlightedPlayersList();
     updatePlot(DataManager.getFilteredData());
 });
