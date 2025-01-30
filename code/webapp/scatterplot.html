@@ -17,11 +17,11 @@
     <div id="filters" class="bg-dark p-3 rounded">
       <div class="row g-3">
 
-        <!-- Min Minutes Slider (Left Side) -->
-        <div class="col-md-3 ml-3 pe-4">
+        <!-- Min Minutes Slider -->
+        <div class="col-md-3 pe-4">
           <label for="min-minutes" class="form-label text-white">Min Minutes:</label>
           <input type="range" id="min-minutes" min="0" max="2100" step="100" value="0" class="form-range w-100">
-          <span id="min-minutes-value" class="text-white text-center d-block" style="width: 50px;">0</span>  <!-- ✅ Fixed width -->
+          <span id="min-minutes-value" class="text-white text-center d-block" style="width: 50px;">0</span>
         </div>
 
         <!-- Min & Max Age Inputs -->
@@ -34,11 +34,12 @@
           <input type="number" id="max-age" placeholder="Enter max age" class="form-control">
         </div>
 
-        <!-- Player Search (Right Side) -->
-        <div class="col-md-3">
+        <!-- Player Search -->
+        <div class="col-md-3 pe-5">
           <label for="player-search" class="form-label text-white">Search Player:</label>
           <input type="text" id="player-search" class="form-control" placeholder="Type player name...">
         </div>
+
       </div>
 
       <hr class="text-white">
@@ -87,8 +88,8 @@
 
       <hr class="text-white">
 
-      <!-- X-Axis & Min X -->
-      <div class="row g-3">
+      <!-- X-Axis & Min X (Now in its own row BELOW the filters) -->
+      <div class="row g-3 mt-3">
         <div class="col-md-6">
           <label for="x-axis-select" class="form-label text-white">X-Axis:</label>
           <select id="x-axis-select" class="form-select">
@@ -111,7 +112,7 @@
         </div>
       </div>
 
-      <!-- Y-Axis & Min Y -->
+      <!-- Y-Axis & Min Y (Also in a new row) -->
       <div class="row g-3 mt-2">
         <div class="col-md-6">
           <label for="y-axis-select" class="form-label text-white">Y-Axis:</label>
