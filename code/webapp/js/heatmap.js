@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr("href", "#")
             .on("click", function (event) {
                 event.preventDefault();
-                console.log("Other visual link clicked");
+                console.log("Radar Matrix link clicked");
             });
 
         try {
