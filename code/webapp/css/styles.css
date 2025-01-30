@@ -139,11 +139,16 @@ table {
   color: white;
 }
 
-/* Hover effect for rows */
 table tbody tr:hover {
-  outline: 2px solid white;
+  outline: 2px solid white; /* Add a white outline for the row */
+  background-color: inherit;
+
   cursor: pointer;
 }
+
+/*table tbody tr:hover td {*/
+/*  background-color: inherit; !* Preserve the existing heatmap colors *!*/
+/*}*/
 
 
 th, td {
@@ -153,22 +158,14 @@ th, td {
 }
 
 /*th {*/
-/*  background-color: rgba(46, 166, 95, 0.49);*/
+/*  background-color: rgba(0, 0, 0, 0.01);*/
 /*  color: white;*/
 /*  cursor: pointer;*/
 /*}*/
 
-td {
-  background-color: rgba(179, 16, 16, 0.72);
-}
-
-th.sorted.asc::after {
-  content: " ▲";
-}
-
-th.sorted.desc::after {
-  content: " ▼";
-}
+/*td {*/
+/*  background-color: rgba(179, 16, 16, 0.72);*/
+/*}*/
 
 .btn-sm {
   margin: 0;
@@ -180,6 +177,8 @@ th.sorted.desc::after {
   background-color: rgba(255, 165, 0, 0.7) !important;
 }
 
+/*-----------------------POP UP SCREEN STYLING---------------------------------------*/
+
 .modal-content {
   border-radius: 10px;
 }
@@ -190,6 +189,42 @@ th.sorted.desc::after {
 
 .modal-body {
   font-size: 1rem;
+}
+
+.player-card {
+  background-color: #343a40;
+  padding: 5px; /* Reduced padding */
+  border-radius: 6px;
+  margin-bottom: 5px; /* Reduced margin */
+  font-size: 0.9rem; /* Slightly smaller font size */
+  box-shadow: 1px 1px 5px rgba(255, 255, 255, 0.1);
+}
+
+#locked-players-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Auto-fit cards into rows */
+  gap: 10px; /* Space between cards */
+}
+
+
+
+
+#min-minutes {
+  width: 200px;
+}
+
+#min-minutes-value {
+  font-weight: bold;
+  margin-left: 10px;
+}
+
+/* Highlight Active Position Filters */
+#position-filter button.active-filter {
+  border: 2px solid #f1efe8; /* Gold outline */
+  background-color: rgba(124, 115, 234, 0.2); /* Light yellow background */
+  color: white;
+  font-weight: bold;
+  transition: background-color 0.2s ease-in-out, border 0.2s ease-in-out;
 }
 
 

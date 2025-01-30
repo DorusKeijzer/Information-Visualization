@@ -1,17 +1,19 @@
 export const DataManager = (function () {
     let fullData = [];
     let filteredData = [];
+    let selectedPlayers = [];
+
     let filters = {
         ageRange: { min: Number.NEGATIVE_INFINITY, max: Number.POSITIVE_INFINITY },
         leagues: [],
         searchTerm: "",
-        positionCategory: "all", // Default to showing all positions
+        positionCategory: "all",
+        minMinutes: 0,
     };
 
     const listeners = [];
 
-    // Load data from the JSON file
-    function loadData(filePath, columnProcessing = {}) {
+    function loadData(filePath = "data/2022-2023_Football_Player_Stats.json", columnProcessing = {}) {
         return d3.json(filePath).then(data => {
             fullData = data.map(player => {
                 const processedPlayer = { ...player };
@@ -23,7 +25,6 @@ export const DataManager = (function () {
                     }
                 }
 
-                // Add position category
                 processedPlayer.category = player.Pos.startsWith("DF")
                     ? "defensive"
                     : player.Pos.startsWith("MF")
@@ -37,57 +38,58 @@ export const DataManager = (function () {
 
             console.log("Loaded data:", fullData);
             applyFilters();
-        }).catch(error => {
-            console.error("Error loading JSON:", error);
-        });
+        }).catch(error => console.error("Error loading JSON:", error));
     }
 
-    // Apply all filters
     function applyFilters() {
-        const { ageRange, leagues, searchTerm, positionCategory } = filters;
-        console.log("Applying filters:", filters);
-
         filteredData = fullData.filter(player => {
-            const inAgeRange = player.Age >= (ageRange.min || Number.NEGATIVE_INFINITY) &&
-                player.Age <= (ageRange.max || Number.POSITIVE_INFINITY);
-            const inLeagues = leagues.length === 0 || leagues.includes(player.Comp);
-            const matchesSearch = player.Player.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesPosition = positionCategory === "all" || player.category === positionCategory;
-
-            return inAgeRange && inLeagues && matchesSearch && matchesPosition;
+            return (
+                player.Age >= filters.ageRange.min &&
+                player.Age <= filters.ageRange.max &&
+                (filters.leagues.length === 0 || filters.leagues.includes(player.Comp)) &&
+                player.Player.toLowerCase().includes(filters.searchTerm.toLowerCase()) &&
+                (filters.positionCategory === "all" || player.category === filters.positionCategory) &&
+                player.Min >= filters.minMinutes
+            );
         });
 
-        console.log("Filtered data:", filteredData);
         notifyListeners();
     }
 
-    // Update filter values
     function updateFilters(newFilters) {
         filters = { ...filters, ...newFilters };
-        console.log("Updated filters:", filters);
         applyFilters();
     }
 
-    // Register listeners
     function registerListener(callback) {
         listeners.push(callback);
     }
 
-    // Notify listeners
     function notifyListeners() {
-        console.log("Notifying listeners with data:", filteredData);
         listeners.forEach(callback => callback(filteredData));
     }
 
-    // Add getFilteredData method
     function getFilteredData() {
         return filteredData;
     }
+
+    function setSelectedPlayers(players) {
+        selectedPlayers = players;
+    }
+
+    function getSelectedPlayers() {
+        return selectedPlayers;
+    }
+
+    // Automatically load data on script import
+    loadData();
 
     return {
         loadData,
         updateFilters,
         registerListener,
         getFilteredData,
+        setSelectedPlayers,
+        getSelectedPlayers,
     };
 })();
