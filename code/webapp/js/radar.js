@@ -345,14 +345,14 @@ function updateRadarGraph() {
   const selectedProfile = document.getElementById('profileDropdown').value;
 
   // Update the list of stats in the UI with clickable elements
-  const statsList = document.getElementById('statsList');
+  //const statsList = document.getElementById('statsList');
   positionAttributes[selectedProfile].forEach(stat => {
     const listItem = document.createElement('li');
     listItem.textContent = stat;
     listItem.classList.add('stat-item');
     listItem.setAttribute('data-stat', stat);
     listItem.addEventListener('click', () => sortDataByStat(stat));
-    statsList.appendChild(listItem);
+   //statsList.appendChild(listItem);
   });
 
   // Re-create the radar matrix with the new profile
@@ -407,6 +407,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialProfile = 'striker';
   document.getElementById('profileDropdown').value = initialProfile;
   updateRadarGraph();
+
+
 
   // Add event listener for dropdown changes
   document.getElementById('profileDropdown').addEventListener('change', updateRadarGraph);
