@@ -316,10 +316,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Separate locked and unlocked players
-        const uniqueLockedPlayers = lockedPlayers.filter(player =>
-            !data.some(filteredPlayer => filteredPlayer.Player === player.Player)
-        );
+        // // Separate locked and unlocked players
+        // const uniqueLockedPlayers = lockedPlayers.filter(player =>
+        //     !data.some(filteredPlayer => filteredPlayer.Player === player.Player)
+        // );
         const unlockedPlayers = data.filter(player =>
             !lockedPlayers.some(locked => locked.Player === player.Player)
         );
@@ -354,6 +354,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const combinedData = [...lockedPlayers, ...unlockedPlayers];
         updateHeatmap(combinedData);
     }
+
+    document.getElementById("open-modal-btn").addEventListener("click", () => {
+        showPlayerModal();
+    });
 
 
 
