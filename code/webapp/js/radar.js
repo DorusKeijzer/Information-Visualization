@@ -1,4 +1,5 @@
 import { DataManager } from './datamanager.js';
+console.log("AAAAAAAA")
 
 // Existing positionAttributes object remains the same
 const positionAttributes = {
@@ -328,14 +329,15 @@ const dataManager = DataManager;
 // Register a listener to receive filtered data and create the radar matrix
 dataManager.registerListener((filteredData) => {
   const positionCategory = "defender";  // Example: Change this dynamically based on the position
-  const transformedData = transformToPercentages(filteredData.slice(9,13), positionCategory);  // Adjust the number of players shown
+  const selectedPlayers = dataManager.getStoredSelectedPlayers(); // Fetch selected players from localStorage
+  const transformedData = transformToPercentages(selectedPlayers, positionCategory);  // Use selected players
   createRadarMatrix('#radar-matrix', transformedData, positionCategory);
   createRadarLegend('#radar-legend', positionCategory); // Create the legend
 });
 
 // Load the data and apply column processing if needed
 dataManager.loadData("data/2022-2023_Football_Player_Stats.json", {
-  Age: value => parseInt(value),  // Example of column procesing
+  Age: value => parseInt(value),  // Example of column processing
   // Add any other column processors here as needed
 });
 
@@ -344,7 +346,6 @@ function updateRadarGraph() {
 
   // Update the list of stats in the UI with clickable elements
   const statsList = document.getElementById('statsList');
-  statsList.innerHTML = '';
   positionAttributes[selectedProfile].forEach(stat => {
     const listItem = document.createElement('li');
     listItem.textContent = stat;
@@ -358,7 +359,10 @@ function updateRadarGraph() {
   const dataManager = DataManager;
 
   dataManager.registerListener((filteredData) => {
-    const transformedData = transformToPercentages(filteredData.slice(9,13), selectedProfile);
+    const selectedPlayers = dataManager.getStoredSelectedPlayers(); // Fetch selected players from localStorage
+
+    console.log("selected players are:", selectedPlayers)
+    const transformedData = transformToPercentages(selectedPlayers, selectedProfile);
     createRadarMatrix('#radar-matrix', transformedData, selectedProfile);
     createRadarLegend('#radar-legend', selectedProfile); // Update the legend
   });
@@ -379,8 +383,9 @@ function sortDataByStat(stat) {
   event.target.classList.add('active-stat');
 
   dataManager.registerListener((filteredData) => {
+    const selectedPlayers = dataManager.getStoredSelectedPlayers(); // Fetch selected players from localStorage
     // Sort the data based on the selected stat
-    const sortedData = filteredData.slice(9,13).sort((a, b) => {
+    const sortedData = selectedPlayers.sort((a, b) => {
       // Convert to number for numeric sorting
       const valueA = parseFloat(a[stat]) || 0;
       const valueB = parseFloat(b[stat]) || 0;
@@ -407,5 +412,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('profileDropdown').addEventListener('change', updateRadarGraph);
 });
 
+
+
+console.log("AAAAAAAAAAAAAAAAAAAAAAAAA")
 // Export the functions and attributes for potential use in other modules
 export { positionAttributes, updateRadarGraph, createRadarMatrix, transformToPercentages };
