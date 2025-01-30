@@ -38,7 +38,8 @@ document.addEventListener("DOMContentLoaded", () => {
     defensive: ["DF"],
     keeper: ["GK"],
   };
-
+  // Track selected players globally (same as "locked" in heatmap)
+  let highlightedPlayers = [];
   const playerList = d3.select("#player-list"); // Reference to the player list container
 
   // Load data
@@ -56,6 +57,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const filters = {
       minAge: null,
       maxAge: null,
+      minX: null, // Minimum value for X axis
+      minY: null, // Minimum value for Y axis
       leagues: ["Premier League", "La Liga", "Serie A", "Ligue 1", "Bundesliga"],
       searchTerm: "",
       positionCategory: "all",
@@ -66,29 +69,43 @@ document.addEventListener("DOMContentLoaded", () => {
         const ageMatch =
           (!filters.minAge || +d.attributes.Age >= filters.minAge) &&
           (!filters.maxAge || +d.attributes.Age <= filters.maxAge);
+    
         const leagueMatch = filters.leagues.includes(d.attributes.Comp);
+    
         const positionMatch =
           filters.positionCategory === "all" ||
           positionMapping[filters.positionCategory]?.some((prefix) =>
             d.attributes.Pos.startsWith(prefix)
           );
-        return ageMatch && leagueMatch && positionMatch;
+    
+        const xMatch = !filters.minX || +d.attributes[selectedX] >= filters.minX;
+        const yMatch = !filters.minY || +d.attributes[selectedY] >= filters.minY;
+    
+        return ageMatch && leagueMatch && positionMatch && xMatch && yMatch;
       });
     }
 
     function updatePlot(data) {
       const filteredData = applyFilters(data);
-
-      x.domain([0, d3.max(filteredData, (d) => +d.attributes[selectedX])]);
-      y.domain([0, d3.max(filteredData, (d) => +d.attributes[selectedY])]);
-
+    
+      // Rescale X and Y axes based on min values set in filters
+      x.domain([
+        filters.minX !== null ? filters.minX : 0, 
+        d3.max(filteredData, (d) => +d.attributes[selectedX])
+      ]);
+    
+      y.domain([
+        filters.minY !== null ? filters.minY : 0, 
+        d3.max(filteredData, (d) => +d.attributes[selectedY])
+      ]);
+    
       xAxis.call(d3.axisBottom(x));
       yAxis.call(d3.axisLeft(y));
-
+    
       const circles = svg.selectAll("circle").data(filteredData, (d) => d.name);
-
+    
       circles.exit().remove();
-
+    
       circles
         .enter()
         .append("circle")
@@ -97,12 +114,12 @@ document.addEventListener("DOMContentLoaded", () => {
         .attr("cy", (d) => y(+d.attributes[selectedY]))
         .attr("r", 5)
         .attr("fill", (d) =>
-          d.isHighlighted
-            ? "blue"
+          highlightedPlayers.some(p => p.name === d.name)
+            ? "#A020F0"  // Keep Yellow for Selected Points
             : d.isSearchHighlighted
-            ? "green"
-            : "#ff6347"
-        ) // Blue for selected, green for search matches, default orange
+            ? "#FF4500"  // Keep Red for Search Matches
+            : "rgba(50, 205, 50)"  // Keep Transparent Green for Normal Points
+        )
         .attr("stroke", "white")
         .attr("stroke-width", 1.5)
         .on("mouseover", (event, d) => {
@@ -116,66 +133,140 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .on("mouseout", () => tooltip.style("opacity", 0))
         .on("click", function (event, d) {
-          // Toggle the isHighlighted property for the clicked player
-          d.isHighlighted = !d.isHighlighted;
-
-          // Update the color of the clicked circle
-          d3.select(this).attr("fill", d.isHighlighted ? "blue" : "#ff6347");
-
-          // Update the selected players list
-          const highlightedPlayers = transformedData.filter((p) => p.isHighlighted);
-          updateSelectedPlayersList(highlightedPlayers);
+          const isHighlighted = highlightedPlayers.some(p => p.name === d.name);
+          if (isHighlighted) {
+            highlightedPlayers = highlightedPlayers.filter(p => p.name !== d.name);
+          } else {
+            highlightedPlayers.push(d);
+          }
+        
+          updatePlot(transformedData);
+          updateHighlightedPlayersList();
         });
-
+    
       // Bring search-highlighted points to the top
       svg.selectAll("circle")
         .filter((d) => d.isSearchHighlighted)
-        .raise(); // Ensure search-highlighted points are on top
-
+        .raise();
+    
       // Bring highlighted points to the front
       svg.selectAll("circle")
         .filter((d) => d.isHighlighted)
-        .raise(); // Ensure selected points are on top
+        .raise();
     }
+
+    function updatePositionFilterUI() {
+      d3.selectAll("#position-filter button").classed("selected", false); // Remove selection from all
+      d3.select(`#position-filter button[data-position="${filters.positionCategory}"]`).classed("selected", true); // Highlight the selected button
+    }
+
+
+    function showRadargraphModal(playerNames) {
+      console.log("Showing radargraph modal for players:", playerNames);
+    
+      const modalElement = document.getElementById("playerModal");
+      if (!modalElement) {
+        console.error("Modal element not found!");
+        return;
+      }
+    
+      // Update modal content
+      d3.select("#player-info").text(`Selected Players: ${playerNames.join(", ")}`);
+    
+      // Set links dynamically
+      d3.select("#heatmap-link").attr("href", `heatmap.html?players=${encodeURIComponent(playerNames.join(","))}`);
+      d3.select("#radar-link").attr("href", `radar.html?players=${encodeURIComponent(playerNames.join(","))}`);
+    
+      const lockedPlayersList = d3.select("#locked-players-list");
+      if (!lockedPlayersList.empty()) {
+        lockedPlayersList.html(""); // Clear previous list
+        if (playerNames.length > 0) {
+          playerNames.forEach(player => {
+            lockedPlayersList.append("li")
+              .attr("class", "list-group-item list-group-item-secondary")
+              .text(player);
+          });
+        } else {
+          lockedPlayersList.append("li")
+            .attr("class", "list-group-item list-group-item-dark")
+            .text("No locked players.");
+        }
+      }
+    
+      try {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+      } catch (error) {
+        console.error("Error showing modal:", error);
+      }
+    }
+
 
     function highlightSearchMatches(searchValue) {
       transformedData.forEach((d) => {
-        d.isSearchHighlighted = searchValue
-          ? d.name.toLowerCase().includes(searchValue.toLowerCase())
-          : false;
+        if (!d.isHighlighted) { // Only update search highlighting if the point is NOT already selected
+          d.isSearchHighlighted = searchValue
+            ? d.name.toLowerCase().includes(searchValue.toLowerCase())
+            : false;
+        }
       });
 
       // Re-render the scatterplot to update search highlights
       updatePlot(transformedData);
     }
 
-    function updateSelectedPlayersList(players) {
-      playerList.html(""); // Clear the list
-      if (players.length === 0) {
-        playerList.append("li").text("No players found.");
-      } else {
-        players.forEach((player) => {
-          const listItem = playerList
-            .append("li")
-            .style("display", "block") // Ensure each player is on a new line
-            .text(player.name);
 
-          // Add a minus button
-          listItem
-            .append("span")
-            .text("  -")
-            .style("color", "red")
-            .style("cursor", "pointer")
+    function updateHighlightedPlayersList() {
+      playerList.html("");
+      if (highlightedPlayers.length === 0) {
+        playerList.append("li").text("No players selected.");
+      } else {
+        highlightedPlayers.forEach((player) => {
+          const listItem = playerList.append("li").text(player.name);
+    
+          listItem.append("button")
+            .text("Remove")
             .on("click", () => {
-              // Remove the player from the highlighted list
-              player.isHighlighted = false;
+              highlightedPlayers = highlightedPlayers.filter(p => p.name !== player.name);
               updatePlot(transformedData);
-              updateSelectedPlayersList(
-                transformedData.filter((p) => p.isHighlighted)
-              );
+              updateHighlightedPlayersList();
             });
         });
       }
+    }
+
+    function showRadargraphModal() {
+      if (highlightedPlayers.length === 0) {
+        alert("No players selected!");
+        return;
+      }
+    
+      const modalElement = document.getElementById("radargraphModal");
+      const playerNames = highlightedPlayers.map((p) => p.name);
+    
+      d3.select("#player-info").text(`Selected Players: ${playerNames.join(", ")}`);
+    
+      d3.select("#heatmap-link").attr("href", `heatmap.html?players=${encodeURIComponent(playerNames.join(","))}`);
+    
+      // ✅ Only set the radar link if 7 or fewer players are selected
+      if (highlightedPlayers.length <= 7) {
+        d3.select("#radar-link")
+          .attr("href", `radar.html?players=${encodeURIComponent(playerNames.join(","))}`)
+          .style("pointer-events", "auto") // Ensures the link is clickable
+          .style("opacity", "1"); // Make sure it's visible
+      } else {
+        d3.select("#radar-link")
+          .attr("href", "#") // Prevents navigation
+          .on("click", function (event) {
+            alert("The maximum number of players for other views is 7.");
+            event.preventDefault(); // 🚨 Stops navigation
+          })
+          .style("pointer-events", "none") // Disables the link
+          .style("opacity", "0.5"); // Makes it look disabled
+      }
+    
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
     }
 
     // Event listeners for filters
@@ -206,6 +297,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     d3.selectAll("#position-filter button").on("click", function () {
       filters.positionCategory = d3.select(this).attr("data-position");
+      updatePositionFilterUI();
+      updatePlot(transformedData);
+    });
+
+    d3.select("#min-x").on("input", function () {
+      filters.minX = this.value ? +this.value : null; // Convert to number or null
+      updatePlot(transformedData);
+    });
+    
+    d3.select("#min-y").on("input", function () {
+      filters.minY = this.value ? +this.value : null; // Convert to number or null
       updatePlot(transformedData);
     });
 
@@ -217,28 +319,15 @@ document.addEventListener("DOMContentLoaded", () => {
       updatePlot(transformedData);
     });
 
-    d3.select("#radargraph-btn").on("click", () => {
-      const highlightedPlayers = transformedData.filter((d) => d.isHighlighted);
-      if (highlightedPlayers.length === 0) {
-        alert("No players selected!");
-      } else {
-        const playerNames = highlightedPlayers.map((p) => p.name).join(", ");
-        alert(`Opening radar graph for: ${playerNames}`);
-      }
+    d3.select("#change-view-btn").on("click", () => {
+      showRadargraphModal();
     });
 
-    d3.select("#heatmap-btn").on("click", () => {
-      const highlightedPlayers = transformedData.filter((d) => d.isHighlighted);
-      if (highlightedPlayers.length === 0) {
-        alert("No players selected!");
-      } else {
-        const playerNames = highlightedPlayers.map((p) => p.name).join(", ");
-        alert(`Opening heatmap for: ${playerNames}`);
-      }
-    });
+
 
     updatePlot(transformedData);
   });
+
 }).catch(error => {
   console.error("Error loading JSON:", error);
 });
