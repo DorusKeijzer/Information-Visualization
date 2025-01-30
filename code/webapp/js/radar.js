@@ -3,7 +3,7 @@ console.log("AAAAAAAA")
 
 // Existing positionAttributes object remains the same
 const positionAttributes = {
-  striker: [
+  attacker: [
     "Goals",        // Goals scored
     "Shots",        // Shots total
     "SoT",          // Shots on target
@@ -381,7 +381,7 @@ function updateRadarGraph() {
 
 function generateExplanation(profile) {
   const attributeDescriptions = {
-    striker: {
+    attacker: {
       "Goals": "Goals scored",
       "Shots": "Shots total",
       "SoT": "Shots on target",
@@ -450,7 +450,7 @@ function sortDataByStat(stat) {
 }
 // Initial setup
 document.addEventListener('DOMContentLoaded', () => {
-  const initialProfile = 'striker';
+  const initialProfile = 'Midfielder';
   document.getElementById('profileDropdown').value = initialProfile;
   updateRadarGraph();
 

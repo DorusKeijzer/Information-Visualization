@@ -258,13 +258,14 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr("href", "#") // Prevent immediate navigation
             .on("click", function (event) {
                 event.preventDefault(); // Prevent default behavior
-                sendToVisualization("scatterplot.html"); // ✅ Now it correctly calls the function!
+                sendToVisualization("scatterplot.html"); // 
             });
 
         d3.select("#other-visual-link")
             .attr("href", "#")
             .on("click", function (event) {
                 event.preventDefault();
+                sendToVisualization("radar.html"); // 
                 console.log("Radar Matrix link clicked");
             });
 
