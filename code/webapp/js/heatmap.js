@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Redirect to the target visualization
         if (targetUrl) {
-            // window.location.href = targetUrl;
+            window.location.href = targetUrl;
         } else {
             console.warn("⚠ Target URL is not provided. No redirection will occur.");
         }
@@ -93,14 +93,28 @@ document.addEventListener('DOMContentLoaded', () => {
             .data(displayedColumns)
             .enter()
             .append("th")
-            .text(d => d)
+            .html(column => {
+                // Append sorting indicator if it's the currently sorted column
+                if (column === currentSortColumn) {
+                    return `${column} ${currentSortOrder === 'asc' ? '▲' : '▼'}`;
+                }
+                return column;
+            })
             .on("click", function (event, column) {
                 if (column === 'Lock') return;
                 console.log("Sorting column:", column);
-                currentSortColumn = column;
-                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
-                sortAndRender(data);
+
+                // Toggle sorting order if clicking on the same column, otherwise reset to ascending
+                if (currentSortColumn === column) {
+                    currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSortColumn = column;
+                    currentSortOrder = 'asc';
+                }
+
+                sortAndRender(DataManager.getFilteredData());
             });
+
 
         // Create table rows
         const rows = tbody.selectAll("tr")
@@ -136,12 +150,17 @@ document.addEventListener('DOMContentLoaded', () => {
                                         sortAndRender(DataManager.getFilteredData());
                                     });
                             } else if (column === 'Player') {
-                                // Handle player modal
                                 d3.select(this)
                                     .append("span")
                                     .text(d.value)
                                     .attr("class", "player-name clickable")
-                                    .on("click", () => showPlayerModal(d.row.Player));
+                                    .on("click", () => {
+                                        // Lock the player if not already locked
+                                        if (!lockedPlayers.some(p => p.Player === d.row.Player)) {
+                                            toggleLockPlayer(d.row);
+                                        }
+                                        showPlayerModal();
+                                    });
                             } else {
                                 // Handle other columns
                                 d3.select(this)
@@ -167,24 +186,20 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Find the selected player details
-        const selectedPlayer = DataManager.getFilteredData().find(p => p.Player === playerName);
-        if (!selectedPlayer) {
-            console.error("Selected player not found in dataset!");
+        // Ensure we only show locked players
+        if (lockedPlayers.length === 0) {
+            console.warn("⚠ No locked players to display.");
             return;
         }
 
-        // Create an array of all selected players (locked + clicked)
-        const selectedPlayers = [...lockedPlayers, selectedPlayer];
-
         // Update modal title
-        d3.select("#player-info").text(`Selected Players:`);
+        d3.select("#player-info").text(`Locked Players:`);
 
-        // Update locked players list with details
+        // Clear and update the list with locked players only
         const playerList = d3.select("#locked-players-list");
         playerList.html(""); // Clear previous content
 
-        selectedPlayers.forEach(player => {
+        lockedPlayers.forEach(player => {
             const playerCard = playerList.append("div")
                 .attr("class", "player-card p-2 mb-2 border rounded bg-secondary text-white");
 
