@@ -8,7 +8,8 @@ body {
     height: 100vh;
     padding: 20px;
   }
-/*------------------------ MAIN PAGE ------------------------------*/
+
+
   .field {
     background-color: #2c6a9b;
     height: 100vh;
@@ -146,10 +147,6 @@ table tbody tr:hover {
   cursor: pointer;
 }
 
-/*table tbody tr:hover td {*/
-/*  background-color: inherit; !* Preserve the existing heatmap colors *!*/
-/*}*/
-
 
 th, td {
   padding: 10px;
@@ -157,15 +154,6 @@ th, td {
   border: 1px solid #444;
 }
 
-/*th {*/
-/*  background-color: rgba(0, 0, 0, 0.01);*/
-/*  color: white;*/
-/*  cursor: pointer;*/
-/*}*/
-
-/*td {*/
-/*  background-color: rgba(179, 16, 16, 0.72);*/
-/*}*/
 
 .btn-sm {
   margin: 0;
@@ -192,16 +180,35 @@ th, td {
 
 /*-----------------------POP UP SCREEN STYLING---------------------------------------*/
 
+/* Modal Styling */
 .modal-content {
+  background-color: #2c6a9b !important; /* ✅ Matches your field color */
+  color: white !important; /* ✅ Ensures text is readable */
   border-radius: 10px;
+  padding: 10px;
 }
 
-.modal-title {
-  font-size: 1.5rem;
+/* Darken the modal header and footer */
+.modal-header, .modal-footer {
+  background-color: #2c2c2c !important;
+  color: white !important;
+  border-bottom: 1px solid white;
 }
 
-.modal-body {
+/* Close button color fix */
+.btn-close {
+  filter: invert(1); /* Makes the close button visible */
+}
+
+/* Modal Player Information */
+#player-info {
   font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Modal Buttons */
+.modal-body .btn {
+  width: 48%;
 }
 
 .player-card {
@@ -227,16 +234,18 @@ th, td {
 }
 
 #min-minutes-value {
+  display: inline-block;
+  width: 40px;  /* Adjust based on the maximum value */
+  text-align: center;  /* Keeps the text centered */
   font-weight: bold;
+
   margin-left: 10px;
 }
 
 /* Highlight Active Position Filters */
 #position-filter button.active-filter {
-  border: 2px solid #f1efe8; /* Gold outline */
-  background-color: rgba(124, 115, 234, 0.2); /* Light yellow background */
+  background-color: #28a745; /* Light yellow background */
   color: white;
-  font-weight: bold;
   transition: background-color 0.2s ease-in-out, border 0.2s ease-in-out;
 }
 
@@ -425,6 +434,7 @@ input[type="text"]:focus {
 .scatter-tooltip.visible {
   transform: scale(1.05);
 }
+
 
 /* Position Filter Buttons */
 #position-filter button {

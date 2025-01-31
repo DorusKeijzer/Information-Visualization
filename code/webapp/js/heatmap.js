@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
         attacking: ['Lock', 'Player', 'Age', 'MP','Min', 'Goals', 'abs_assists', 'SoT%', 'PasAss', 'TouAttPen'], // Forwards
         midfield: ['Lock', 'Player', 'Age',  'MP','Min', 'abs_assists', 'PasTotCmp%', 'PasProg', 'SCA', 'Carries'], // Midfielders
         defensive: ['Lock', 'Player', 'Age', 'MP','Min', 'abs_assists', 'Tkl', 'Int', 'Clr', 'AerWon%'], // Defenders
-        // keeper: ['Lock', 'Player', 'Age', 'MP', 'Min',  'abs_assists', 'AerWon%', 'Recov', 'CrdY', 'PKcon'] // Goalkeepers
     };
 
     const columnDescriptions = {
@@ -39,15 +38,35 @@ document.addEventListener('DOMContentLoaded', () => {
         'AerWon%': 'Aerial Duels Won Percentage.',
     };
 
+    let filters = {
+        minAge: null,
+        maxAge: null,
+        leagues: ["Premier League", "La Liga", "Serie A", "Ligue 1", "Bundesliga"], // Default leagues
+        searchTerm: "",
+        positionCategory: "all",
+        minMinutes: null
+    };
+
+    // Create tooltip div
+    const tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltipHeatmap")
+        .style("display", "none");
+
+    function applyFilters(data) {
+        return data.filter(d => {
+            const ageMatch =
+                (!filters.minAge || +d.Age >= filters.minAge) &&
+                (!filters.maxAge || +d.Age <= filters.maxAge);
+            return ageMatch;
+        });
+    }
+
 
     function sendToVisualization(targetUrl) {
         if (lockedPlayers.length === 0) {
-            console.warn("⚠ No players are locked! Nothing to send.");
             return;
         }
-
-        console.log("✅ Sending the following locked players to visualization:", lockedPlayers);
-
         // Store selected players in DataManager
         DataManager.sendSelectedPlayers(lockedPlayers);
 
@@ -59,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetUrl) {
             window.location.href = targetUrl;
         } else {
-            console.warn("⚠ Target URL is not provided. No redirection will occur.");
+            console.warn("Target URL is not provided");
         }
     }
 
@@ -94,24 +113,35 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Color scales initialized:", colorScales);
     }
 
-    // Create tooltip div
-    const tooltip = d3.select("body")
-        .append("div")
-        .attr("class", "tooltipHeatmap")
-        .style("display", "none");
-
 
 
     function updateHeatmap(data) {
         // console.log("Updating heatmap with data:", data);
         console.log("Displayed columns:", displayedColumns);
+        // ✅ Separate locked and unlocked players BEFORE filtering
+        const unlockedPlayers = data.filter(player =>
+            !lockedPlayers.some(locked => locked.Player === player.Player)
+        );
+
+// ✅ Apply filters only to unlocked players
+        const filteredUnlockedPlayers = applyFilters(unlockedPlayers);
+
+// ✅ Merge locked players back on top
+        const filteredData = [...lockedPlayers, ...filteredUnlockedPlayers];
+
+        console.log("📌 Players after filtering:", filteredData);
+
+
+
+
 
         container.selectAll("*").remove();
 
-        if (data.length === 0) {
+        if (filteredData.length === 0) {
             container.append('p').text('No data available for the selected filters.');
             return;
         }
+
 
         const table = container.append("table").attr("class", "table table-dark table-hover");
         const thead = table.append("thead");
@@ -159,11 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 sortAndRender(DataManager.getFilteredData());
             });
-
-
         // Create table rows
         const rows = tbody.selectAll("tr")
-            .data(data.slice(0, 10)) // Show top 10 players
+            .data(filteredData.slice(0, 30)) // Show top 10 players
             .enter()
             .append("tr");
 
@@ -218,87 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     });
                 }
             });
-    }
 
-
-
-    function showPlayerModal(playerName) {
-        console.log("Showing modal for player:", playerName);
-
-        const modalElement = document.getElementById("playerModal");
-        if (!modalElement) {
-            console.error("Modal element not found!");
-            return;
-        }
-
-        // Ensure we only show locked players
-        if (lockedPlayers.length === 0) {
-            console.warn("⚠ No locked players to display.");
-            return;
-        }
-
-        // Update modal title
-        d3.select("#player-info").text(`Locked Players:`);
-
-        // Clear and update the list with locked players only
-        const playerList = d3.select("#locked-players-list");
-        playerList.html(""); // Clear previous content
-
-        lockedPlayers.forEach(player => {
-            const playerCard = playerList.append("div")
-                .attr("class", "player-card p-2 mb-2 border rounded bg-secondary text-white");
-
-            playerCard.append("h6").text(player.Player);
-            playerCard.append("p").html(`<strong>Club:</strong> ${player.Squad || 'Unknown'}`);
-            playerCard.append("p").html(`<strong>Nation:</strong> ${player.Nation || 'Unknown'}`);
-            playerCard.append("p").html(`<strong>Age:</strong> ${player.Age || 'N/A'}`);
-        });
-
-        d3.select("#scatterplot-link")
-            .attr("href", "#") // Prevent immediate navigation
-            .on("click", function (event) {
-                event.preventDefault(); // Prevent default behavior
-                sendToVisualization("scatterplot.html"); // 
-            });
-
-        d3.select("#other-visual-link")
-            .attr("href", "#")
-            .on("click", function (event) {
-                event.preventDefault();
-                sendToVisualization("radar.html"); // 
-                console.log("Radar Matrix link clicked");
-            });
-
-        try {
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
-        } catch (error) {
-            console.error("Error showing modal:", error);
-        }
-    }
-
-    function toggleLockPlayer(player) {
-        const isLocked = lockedPlayers.some(p => p.Player === player.Player);
-        if (isLocked) {
-            // Remove player from lockedPlayers
-            lockedPlayers = lockedPlayers.filter(p => p.Player !== player.Player);
-
-            // Update stored selected players in DataManager
-            const storedPlayers = DataManager.getStoredSelectedPlayers();
-            const updatedStoredPlayers = storedPlayers.filter(p => p.Player !== player.Player);
-            DataManager.sendSelectedPlayers(updatedStoredPlayers); // Update localStorage
-            console.log(`❌ Removed player from storage: ${player.Player}`);
-        } else {
-            // Add player to lockedPlayers
-            lockedPlayers.push(player);
-
-            // Update stored selected players in DataManager
-            const storedPlayers = DataManager.getStoredSelectedPlayers();
-            storedPlayers.push(player);
-            DataManager.sendSelectedPlayers(storedPlayers); // Update localStorage
-            console.log(`✅ Added player to storage: ${player.Player}`);
-        }
-        sortAndRender(DataManager.getFilteredData());
     }
 
     function sortAndRender(data) {
@@ -356,19 +304,102 @@ document.addEventListener('DOMContentLoaded', () => {
         updateHeatmap(combinedData);
     }
 
+
+    function showPlayerModal(playerName) {
+        console.log("Showing modal for player:", playerName);
+
+        const modalElement = document.getElementById("playerModal");
+        if (!modalElement) {
+            console.error("Modal element not found!");
+            return;
+        }
+
+        // Ensure we only show locked players
+        if (lockedPlayers.length === 0) {
+            console.warn("⚠ No locked players to display.");
+            return;
+        }
+
+        // Update modal title
+        d3.select("#player-info").text(`Locked Players:`);
+
+        // Clear and update the list with locked players only
+        const playerList = d3.select("#locked-players-list");
+        playerList.html(""); // Clear previous content
+
+        lockedPlayers.forEach(player => {
+            const playerCard = playerList.append("div")
+                .attr("class", "player-card p-2 mb-2 border rounded bg-secondary text-white");
+
+            playerCard.append("h6").text(player.Player);
+            playerCard.append("p").html(`<strong>Club:</strong> ${player.Squad || 'Unknown'}`);
+            playerCard.append("p").html(`<strong>Nation:</strong> ${player.Nation || 'Unknown'}`);
+            playerCard.append("p").html(`<strong>Age:</strong> ${player.Age || 'N/A'}`);
+        });
+
+        d3.select("#scatterplot-link")
+            .attr("href", "#") // Prevent immediate navigation
+            .on("click", function (event) {
+                event.preventDefault(); // Prevent default behavior
+                sendToVisualization("scatterplot.html"); //
+            });
+
+        d3.select("#other-visual-link")
+            .attr("href", "#")
+            .on("click", function (event) {
+                event.preventDefault();
+                sendToVisualization("radar.html"); //
+                console.log("Radar Matrix link clicked");
+            });
+
+        try {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } catch (error) {
+            console.error("Error showing modal:", error);
+        }
+    }
+
+    function toggleLockPlayer(player) {
+        const isLocked = lockedPlayers.some(p => p.Player === player.Player);
+        if (isLocked) {
+            // Remove player from lockedPlayers
+            lockedPlayers = lockedPlayers.filter(p => p.Player !== player.Player);
+
+            // Update stored selected players in DataManager
+            const storedPlayers = DataManager.getStoredSelectedPlayers();
+            const updatedStoredPlayers = storedPlayers.filter(p => p.Player !== player.Player);
+            DataManager.sendSelectedPlayers(updatedStoredPlayers); // Update localStorage
+            console.log(`❌ Removed player from storage: ${player.Player}`);
+        } else {
+            // Add player to lockedPlayers
+            lockedPlayers.push(player);
+
+            // Update stored selected players in DataManager
+            const storedPlayers = DataManager.getStoredSelectedPlayers();
+            storedPlayers.push(player);
+            DataManager.sendSelectedPlayers(storedPlayers); // Update localStorage
+            console.log(`✅ Added player to storage: ${player.Player}`);
+        }
+        sortAndRender(DataManager.getFilteredData());
+    }
+
+
+
     document.getElementById("open-modal-btn").addEventListener("click", () => {
         showPlayerModal();
     });
 
 
 
-
     d3.select("#min-age").on("input", function () {
-        DataManager.updateFilters({ ageRange: { min: +this.value || 0 } });
+        filters.minAge = +this.value || null;
+        updateHeatmap(DataManager.getFilteredData());
     });
 
     d3.select("#max-age").on("input", function () {
-        DataManager.updateFilters({ ageRange: { max: +this.value || Infinity } });
+        filters.maxAge = +this.value || null;
+        updateHeatmap(DataManager.getFilteredData());
     });
 
     d3.selectAll("#league-filter input[type=checkbox]").on("change", function () {
@@ -404,9 +435,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Register listener instead of loading data
     DataManager.registerListener(data => {
+        console.log("🔄 Heatmap received filtered data:", data);
+        console.log("👀 Player Ages After Filtering:", data.map(d => d.Age)); // ✅ Add this debug log
+
         initializeColorScales(data);
         sortAndRender(data);
     });
+
 
     displayedColumns = positionColumns.all;
     updateHeatmap(DataManager.getFilteredData());

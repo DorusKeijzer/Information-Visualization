@@ -5,7 +5,7 @@ export const DataManager = (function () {
 
     let filters = {
         ageRange: { min: Number.NEGATIVE_INFINITY, max: Number.POSITIVE_INFINITY },
-        leagues: [],
+        leagues: ["Premier League", "La Liga", "Serie A", "Ligue 1", "Bundesliga"],
         searchTerm: "",
         positionCategory: "all",
         minMinutes: 0,
@@ -45,22 +45,26 @@ export const DataManager = (function () {
     function applyFilters() {
         filteredData = fullData.filter(player => {
             return (
-                player.Age >= filters.ageRange.min &&
-                player.Age <= filters.ageRange.max &&
-                (filters.leagues.length === 0 || filters.leagues.includes(player.Comp)) &&
+                +player.Age >= +filters.ageRange.min &&
+                +player.Age <= +filters.ageRange.max &&
+                (filters.leagues.length > 0 && filters.leagues.includes(player.Comp)) &&
                 player.Player.toLowerCase().includes(filters.searchTerm.toLowerCase()) &&
                 (filters.positionCategory === "all" || player.category === filters.positionCategory) &&
-                player.Min >= filters.minMinutes
+                +player.Min >= +filters.minMinutes
             );
         });
-
         notifyListeners();
     }
 
     function updateFilters(newFilters) {
+        if (newFilters.leagues !== undefined) {
+            // If all leagues are deselected, set filters.leagues to an empty array
+            filters.leagues = newFilters.leagues.length > 0 ? newFilters.leagues : [];
+        }
         filters = { ...filters, ...newFilters };
         applyFilters();
     }
+
 
     function registerListener(callback) {
         listeners.push(callback);
