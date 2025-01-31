@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         defensive: ['Lock', 'Player', 'Age', 'MP','Min', 'abs_assists', 'Tkl', 'Int', 'Clr', 'AerWon%'], // Defenders
     };
 
+    // Adding the tooltip
     const columnDescriptions = {
         'Lock': 'Lock this player to keep them selected',
         'Player': 'Player name',
@@ -38,21 +39,17 @@ document.addEventListener('DOMContentLoaded', () => {
         'AerWon%': 'Aerial Duels Won Percentage.',
     };
 
-    let filters = {
-        minAge: null,
-        maxAge: null,
-        leagues: ["Premier League", "La Liga", "Serie A", "Ligue 1", "Bundesliga"], // Default leagues
-        searchTerm: "",
-        positionCategory: "all",
-        minMinutes: null
-    };
-
     // Create tooltip div
     const tooltip = d3.select("body")
         .append("div")
         .attr("class", "tooltipHeatmap")
         .style("display", "none");
 
+    // Fixing age problem with filtering
+    let filters = {
+        minAge: null,
+        maxAge: null,
+    };
     function applyFilters(data) {
         return data.filter(d => {
             const ageMatch =
@@ -62,19 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // For brushing and linking
 
     function sendToVisualization(targetUrl) {
         if (lockedPlayers.length === 0) {
             return;
         }
-        // Store selected players in DataManager
         DataManager.sendSelectedPlayers(lockedPlayers);
-
-        // Verify players are correctly stored in localStorage
-        const storedPlayers = DataManager.getStoredSelectedPlayers();
-        console.log("📝 Players saved and retrieved from DataManager:", storedPlayers);
-
-        // Redirect to the target visualization
         if (targetUrl) {
             window.location.href = targetUrl;
         } else {
@@ -82,67 +73,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Heatmap coloring
 
     function initializeColorScales(data) {
-        // console.log("Initializing color scales with data:", data);
         colorScales = displayedColumns.reduce((scales, column) => {
             if (!['Player', 'Age', 'Squad', 'Pos', 'Lock'].includes(column)) {
                 let values;
 
+                // Absolute amount of assists
                 if (column === 'abs_assists') {
-                    // Ensure abs_assists is properly calculated
                     values = data.map(d => {
                         const assists = d.Assists ? +d.Assists : 0;
                         const minutes = d.Min ? +d.Min : 0;
                         return Math.round((assists * minutes) / 90);
                     }).filter(v => !isNaN(v));
                 } else {
-                    // Standard numerical columns
                     values = data.map(d => +d[column]).filter(v => !isNaN(v));
                 }
-
                 if (values.length > 0) {
                     scales[column] = d3.scaleLinear()
-                        .domain([Math.min(...values), Math.max(...values)]) // Use full filtered range
+                        .domain([Math.min(...values), Math.max(...values)])
                         .range(['#2fff60', '#1b5e20']);
                 }
             }
             return scales;
         }, {});
-
-        console.log("Color scales initialized:", colorScales);
     }
 
-
-
     function updateHeatmap(data) {
-        // console.log("Updating heatmap with data:", data);
-        console.log("Displayed columns:", displayedColumns);
-        // ✅ Separate locked and unlocked players BEFORE filtering
         const unlockedPlayers = data.filter(player =>
             !lockedPlayers.some(locked => locked.Player === player.Player)
         );
-
-// ✅ Apply filters only to unlocked players
+        // Add locked players on top
         const filteredUnlockedPlayers = applyFilters(unlockedPlayers);
-
-// ✅ Merge locked players back on top
         const filteredData = [...lockedPlayers, ...filteredUnlockedPlayers];
-
-        console.log("📌 Players after filtering:", filteredData);
-
-
-
-
-
         container.selectAll("*").remove();
 
         if (filteredData.length === 0) {
             container.append('p').text('No data available for the selected filters.');
             return;
         }
-
-
         const table = container.append("table").attr("class", "table table-dark table-hover");
         const thead = table.append("thead");
         const tbody = table.append("tbody");
@@ -154,15 +124,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .enter()
             .append("th")
             .html(column => {
-                // Append sorting indicator if it's the currently sorted column
                 if (column === currentSortColumn) {
                     return `${column} ${currentSortOrder === 'asc' ? '▲' : '▼'}`;
                 }
                 return column;
             })
-            //  ========================== TOOLTIP HEATMAP FUNCTION ======================================
+            // Tooltip
             .on("mouseover", function (event, column) {
-                // Show tooltip with column description
                 if (columnDescriptions[column]) {
                     tooltip.style("display", "block")
                         .text(columnDescriptions[column]);
@@ -177,33 +145,29 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .on("click", function (event, column) {
                 if (column === 'Lock') return;
-                console.log("Sorting column:", column);
-
-                // Toggle sorting order if clicking on the same column, otherwise reset to ascending
                 if (currentSortColumn === column) {
                     currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
                 } else {
                     currentSortColumn = column;
                     currentSortOrder = 'asc';
                 }
-
                 sortAndRender(DataManager.getFilteredData());
             });
         // Create table rows
         const rows = tbody.selectAll("tr")
-            .data(filteredData.slice(0, 30)) // Show top 10 players
+            .data(filteredData.slice(0, 30))
             .enter()
             .append("tr");
 
         rows.selectAll("td")
                         .data(row => displayedColumns.map(column => {
                             if (column === 'abs_assists') {
-                                // Calculate abs_assists dynamically
+                                // Calculate abs_assists
                                 const assists = row.Assists ? +row.Assists : 0;
                                 const minutes = row.Min ? +row.Min : 0;
-                                return { value: Math.round((assists * minutes) / 90), row }; // Return calculated value with row context
+                                return { value: Math.round((assists * minutes) / 90), row };
                             }
-                            return { value: row[column], row }; // For other columns, return value with row context
+                            return { value: row[column], row };
                         }))
                         .enter()
                         .append("td")
@@ -250,10 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function sortAndRender(data) {
-        // Check for stored selected players and lock them
         const storedPlayers = DataManager.getStoredSelectedPlayers();
         if (storedPlayers.length > 0) {
-            console.log("✅ Locking stored players:", storedPlayers);
             storedPlayers.forEach((storedPlayer) => {
                 // Avoid duplicates in lockedPlayers
                 if (!lockedPlayers.some((locked) => locked.Player === storedPlayer.Player)) {
@@ -264,15 +226,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-
-        // // Separate locked and unlocked players
-        // const uniqueLockedPlayers = lockedPlayers.filter(player =>
-        //     !data.some(filteredPlayer => filteredPlayer.Player === player.Player)
-        // );
         const unlockedPlayers = data.filter(player =>
             !lockedPlayers.some(locked => locked.Player === player.Player)
         );
-
         if (currentSortColumn) {
             unlockedPlayers.sort((a, b) => {
                 let valueA, valueB;
@@ -299,31 +255,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-
         const combinedData = [...lockedPlayers, ...unlockedPlayers];
         updateHeatmap(combinedData);
     }
 
-
+    // Pop up functionality
     function showPlayerModal(playerName) {
-        console.log("Showing modal for player:", playerName);
 
         const modalElement = document.getElementById("playerModal");
         if (!modalElement) {
             console.error("Modal element not found!");
             return;
         }
-
         // Ensure we only show locked players
         if (lockedPlayers.length === 0) {
             console.warn("⚠ No locked players to display.");
             return;
         }
 
-        // Update modal title
         d3.select("#player-info").text(`Locked Players:`);
-
-        // Clear and update the list with locked players only
         const playerList = d3.select("#locked-players-list");
         playerList.html(""); // Clear previous content
 
@@ -338,19 +288,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         d3.select("#scatterplot-link")
-            .attr("href", "#") // Prevent immediate navigation
-            .on("click", function (event) {
-                event.preventDefault(); // Prevent default behavior
-                sendToVisualization("scatterplot.html"); //
-            });
-
-        d3.select("#other-visual-link")
             .attr("href", "#")
             .on("click", function (event) {
                 event.preventDefault();
-                sendToVisualization("radar.html"); //
-                console.log("Radar Matrix link clicked");
+                sendToVisualization("scatterplot.html"); //
             });
+
+        // UPDATE RADAR MATRIX BUTTON STATE
+        const radarButton = d3.select("#other-visual-link");
+
+        if (lockedPlayers.length > 7) {
+            radarButton.attr("href", "#")
+                .style("pointer-events", "none")
+                .style("opacity", "0.5");
+        } else {
+            radarButton.attr("href", "radar.html")
+                .style("pointer-events", "auto")
+                .style("opacity", "1");
+        }
 
         try {
             const modal = new bootstrap.Modal(modalElement);
@@ -365,32 +320,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isLocked) {
             // Remove player from lockedPlayers
             lockedPlayers = lockedPlayers.filter(p => p.Player !== player.Player);
-
             // Update stored selected players in DataManager
             const storedPlayers = DataManager.getStoredSelectedPlayers();
             const updatedStoredPlayers = storedPlayers.filter(p => p.Player !== player.Player);
-            DataManager.sendSelectedPlayers(updatedStoredPlayers); // Update localStorage
+            DataManager.sendSelectedPlayers(updatedStoredPlayers);
             console.log(`❌ Removed player from storage: ${player.Player}`);
         } else {
             // Add player to lockedPlayers
             lockedPlayers.push(player);
-
             // Update stored selected players in DataManager
             const storedPlayers = DataManager.getStoredSelectedPlayers();
             storedPlayers.push(player);
-            DataManager.sendSelectedPlayers(storedPlayers); // Update localStorage
+            DataManager.sendSelectedPlayers(storedPlayers);
             console.log(`✅ Added player to storage: ${player.Player}`);
         }
         sortAndRender(DataManager.getFilteredData());
     }
 
-
-
     document.getElementById("open-modal-btn").addEventListener("click", () => {
         showPlayerModal();
     });
-
-
 
     d3.select("#min-age").on("input", function () {
         filters.minAge = +this.value || null;
@@ -412,10 +361,9 @@ document.addEventListener('DOMContentLoaded', () => {
     d3.select("#min-minutes").on("input", function () {
         const minMinutes = +this.value;
         console.log("Min Minutes filter input:", minMinutes);
-        d3.select("#min-minutes-value").text(minMinutes); // Update display value
+        d3.select("#min-minutes-value").text(minMinutes);
         DataManager.updateFilters({ minMinutes });
     });
-
 
     d3.select("#player-search").on("input", function () {
         DataManager.updateFilters({ searchTerm: this.value });
@@ -428,16 +376,13 @@ document.addEventListener('DOMContentLoaded', () => {
         DataManager.updateFilters({ positionCategory: position });
 
         // Highlight active position filter
-        d3.selectAll("#position-filter button").classed("active-filter", false); // Remove highlight from all
-        d3.select(this).classed("active-filter", true); // Highlight selected button
+        d3.selectAll("#position-filter button").classed("active-filter", false);
+        d3.select(this).classed("active-filter", true);
     });
 
 
     // Register listener instead of loading data
     DataManager.registerListener(data => {
-        console.log("🔄 Heatmap received filtered data:", data);
-        console.log("👀 Player Ages After Filtering:", data.map(d => d.Age)); // ✅ Add this debug log
-
         initializeColorScales(data);
         sortAndRender(data);
     });

@@ -12,7 +12,7 @@ export const DataManager = (function () {
     };
 
     const listeners = [];
-    const selectionListeners = []; // Ensure this exists
+    const selectionListeners = [];
 
     function loadData(filePath = "data/2022-2023_Football_Player_Stats.json", columnProcessing = {}) {
         return d3.json(filePath).then(data => {
@@ -80,8 +80,7 @@ export const DataManager = (function () {
 
     function sendSelectedPlayers(players) {
         selectedPlayers = players;
-        localStorage.setItem("selectedPlayers", JSON.stringify(players)); // ✅ Store in localStorage
-        console.log("✅ Sending selected players:", selectedPlayers);
+        localStorage.setItem("selectedPlayers", JSON.stringify(players));
         notifySelectionListeners();
     }
 
@@ -105,7 +104,6 @@ export const DataManager = (function () {
         loadData,
         updateFilters,
         registerListener,
-        registerSelectionListener, // **This is the function that was missing**
         getFilteredData,
         sendSelectedPlayers,
         getStoredSelectedPlayers,
