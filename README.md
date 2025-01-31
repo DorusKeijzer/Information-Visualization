@@ -4,6 +4,7 @@ This project is an **interactive data visualization web application** that allow
 
 ## 📁 Project Structure
 
+```
 INFORMATION-VISUALIZATION
 │── code/
 │   ├── data_wrangling_scripts/
@@ -29,7 +30,7 @@ INFORMATION-VISUALIZATION
 │   │   ├── index.html           # Homepage (Main Dashboard)
 │   │   ├── radar.html           # Page for radar chart visualization
 │   │   ├── scatterplot.html     # Page for scatter plot visualization
-
+```
 ---
 
 ## 🚀 Features
@@ -59,8 +60,9 @@ INFORMATION-VISUALIZATION
 ---
 
 ## 🔧 Setup & Installation
-### 1️⃣ Clone the Repository
 ```bash
+1️⃣ Clone the Repository
+
 git clone https://github.com/your-username/information-visualization.git
 cd information-visualization/webapp
 
@@ -112,6 +114,7 @@ Then, open http://localhost:8000/webapp/index.html in your browser.
 	•	Click on the “Radar Chart” button in the heatmap or scatter plot to navigate to radar.html.
 	•	Compare selected players based on their position attributes (Striker, Midfielder, Defender).
 	•	Click on any statistic name in the radar legend to sort players dynamically based on that metric.
+
 
 📌 Dependencies
 
